@@ -12,11 +12,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class Schematic implements GravSerializable {
-    private IntVector3D origin;
-    private IntVector3D dimensions;
-    private int[][][] blocks;
-    private int squareSize;
-    private int lineSize;
+    private final IntVector3D origin;
+    private final IntVector3D dimensions;
+    private final int[][][] blocks;
+    private final int squareSize;
+    private final int lineSize;
 
     public Schematic(GravSerializer serializer) {
         this.dimensions = serializer.readObject();

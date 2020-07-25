@@ -23,6 +23,8 @@ import java.util.function.Supplier;
  * Also works as a sort-of edit queue
  */
 public class SpigotAsyncWorld extends AsyncWorld {
+    private ChunkQueue chunkQueue;
+
     private static ExecutorService executor = Executors.newCachedThreadPool();
 
     private UUID world;
@@ -32,7 +34,12 @@ public class SpigotAsyncWorld extends AsyncWorld {
     protected String serverVersion;
 
     public SpigotAsyncWorld(World world) {
+        this(world, GlobalChunkQueue.instance);
+    }
+
+    public SpigotAsyncWorld(World world, ChunkQueue chunkQueue) {
         this.world = world.getUID();
+        this.chunkQueue = chunkQueue;
 
         String name = Bukkit.getServer().getClass().getName();
         String[] parts = name.split("\\.");
@@ -228,7 +235,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
     @Override
     public synchronized CompletableFuture<Void> flush() {
         List<AsyncChunk> edited = chunkMap.getCachedCopy();
-        CompletableFuture<Void> future = GlobalChunkQueue.instance.queueChunks(edited);
+        CompletableFuture<Void> future = chunkQueue.queueChunks(edited);
         this.chunkMap.clear();
         return future;
     }
@@ -244,7 +251,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             return false;
         List<AsyncChunk> edited = chunkMap.getCachedCopy();
         edited.removeIf(c -> !c.isEdited());
-        GlobalChunkQueue.instance.update(edited, timeoutMs);
+        chunkQueue.update(edited, timeoutMs);
         this.chunkMap.clear();
         return edited.isEmpty();
     }
