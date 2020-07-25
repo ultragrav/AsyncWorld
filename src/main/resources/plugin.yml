@@ -1,0 +1,4 @@
+name: AsyncWorld
+version: ${project.version}
+main: net.ultragrav.asyncworld.plugin.PluginAsyncWorld
+commands:
