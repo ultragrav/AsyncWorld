@@ -13,7 +13,7 @@
     </properties>
 
     <modules>
-        <module>AsyncWorldCore</module>
+        <module>async-world-core</module>
         <module>async-world1_8_R3</module>
         <module>async-world1_12_R1</module>
     </modules>
@@ -46,16 +46,16 @@
     </repositories>
 
 
-
     <dependencies>
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>Utils</artifactId>
             <version>1.0.0</version>
             <exclusions>
-                <groupId>org.spigotmc</groupId>
-                <artifactId>spigot</artifactId>
-                <version>1.12.2-R0.1-SNAPSHOT</version>
+                <exclusion>
+                    <groupId>org.spigotmc</groupId>
+                    <artifactId>spigot</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
     </dependencies>
