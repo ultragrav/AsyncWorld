@@ -1,4 +1,4 @@
-package net.ultragrav.asyncworld.schematics;
+package main.java.net.ultragrav.asyncworld.schematics;
 
 import lombok.AllArgsConstructor;
 import net.ultragrav.asyncworld.*;

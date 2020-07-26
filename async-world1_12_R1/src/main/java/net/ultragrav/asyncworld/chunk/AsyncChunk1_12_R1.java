@@ -1,20 +1,25 @@
-package net.ultragrav.asyncworld.chunk;
+package main.java.net.ultragrav.asyncworld.chunk;
 
+import main.java.net.ultragrav.asyncworld.AsyncChunk;
+import main.java.net.ultragrav.asyncworld.AsyncWorld;
+import main.java.net.ultragrav.asyncworld.ChunkLocation;
 import net.minecraft.server.v1_12_R1.*;
-import net.ultragrav.asyncworld.AsyncChunk;
-import net.ultragrav.asyncworld.AsyncWorld;
-import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AsyncChunk1_12_R1 extends AsyncChunk {
     public AsyncChunk1_12_R1(AsyncWorld parent, ChunkLocation loc) {
         super(parent, loc);
+        Arrays.fill(biomes, (byte) -1);
+    }
+
+    private byte[] biomes = new byte[256];
+
+    @Override
+    public void setBiome(int x, int z, byte biome) {
+        biomes[z << 4 | x] = biome;
     }
 
     @Override
@@ -30,6 +35,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     private Map<BlockPosition, TileEntity> tilesToRemove = new HashMap<>();
+    private Map<BlockPosition, TileEntity> tilesToAdd = new HashMap<>();
 
     private Chunk getNmsChunk() {
         ChunkLocation loc = this.getLoc();
@@ -54,6 +60,14 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         });
 
         tilesToRemove.clear();
+
+        //Add tile entities
+        tilesToAdd.forEach((bp, te) -> {
+            nmsChunk.getWorld().setTileEntity(bp, te); //Set in world (also sets block position and world of tile entity)
+            nmsChunk.getTileEntities().put(bp, te); //Set in chunk
+        });
+
+        tilesToAdd.clear();
 
         this.sendPackets(mask);
     }
@@ -125,7 +139,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 int ly = i & 15;
                 int lz = i >>> 4 & 15;
 
-                if(block == -2)
+                if (block == -2)
                     continue;
 
 
@@ -162,6 +176,14 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 sections[sectionIndex] = null;
             }
         }
+
+        //Biomes
+        byte[] chunkBiomes = nmsChunk.getBiomeIndex();
+        for (int i = 0; i < chunkBiomes.length && i < biomes.length; i++)
+            if (biomes[i] != -1)
+                chunkBiomes[i] = biomes[i];
+        Arrays.fill(biomes, (byte) -1);
+
         //heightmap/lighting
         nmsChunk.initLighting();
     }
@@ -171,13 +193,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-            if((sectionIndex >> sectionIndex & 1) == 0)
+            if ((sectionIndex >> sectionIndex & 1) == 0)
                 continue;
 
             ChunkSection section = sections[sectionIndex];
-            for(int x = 0; x < 16; x++){
-                for(int y = 0; y < 16; y++) {
-                    for(int z = 0; z < 16; z++) {
+            for (int x = 0; x < 16; x++) {
+                for (int y = 0; y < 16; y++) {
+                    for (int z = 0; z < 16; z++) {
                         int block = section != null ? Block.getCombinedId(sections[sectionIndex].getType(x, y, z)) : 0;
                         this.writeBlock(x, y + (sectionIndex << 4), z, block & 4095, (byte) (block >>> 12));
                     }
