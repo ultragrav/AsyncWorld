@@ -1,6 +1,5 @@
 package net.ultragrav.asyncworld;
 
-import net.ultragrav.asyncworld.plugin.PluginAsyncWorld;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,11 +15,9 @@ import java.util.concurrent.Executors;
 public class ChunkQueue implements Listener {
     public static int WORK_TIME_PER_TICK_MS = 15;
     public static int THREADS = Runtime.getRuntime().availableProcessors();
-
-    private Plugin plugin;
-
     ExecutorService executor = Executors.newCachedThreadPool();
     boolean useGC = false;
+    private Plugin plugin;
     private Map<Integer, CompletableFuture<Void>> callbacks = new HashMap<>();
     private List<AsyncChunk> queue = new ArrayList<>();
     private int taskId = -1;
