@@ -1,4 +1,4 @@
-package net.ultragrav.asyncworld;
+package main.java.net.ultragrav.asyncworld;
 
 import net.ultragrav.asyncworld.plugin.PluginAsyncWorld;
 

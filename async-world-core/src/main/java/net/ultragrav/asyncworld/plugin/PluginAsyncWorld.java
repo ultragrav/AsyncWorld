@@ -1,6 +1,6 @@
-package net.ultragrav.asyncworld.plugin;
+package main.java.net.ultragrav.asyncworld.plugin;
 
-import net.ultragrav.asyncworld.GlobalChunkQueue;
+import main.java.net.ultragrav.asyncworld.GlobalChunkQueue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PluginAsyncWorld extends JavaPlugin {

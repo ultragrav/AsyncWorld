@@ -1,4 +1,4 @@
-package net.ultragrav.asyncworld;
+package main.java.net.ultragrav.asyncworld;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -20,11 +20,23 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         public short[] contents = new short[4096];
     }
 
-    @Getter
-    @AllArgsConstructor
     public static class CuboidEdit {
         private CuboidRegion region;
         private Supplier<Short> blockSupplier;
+
+        public CuboidEdit(CuboidRegion region, Supplier<Short> blockSupplier) {
+            this.region = region;
+            this.blockSupplier = blockSupplier;
+        }
+
+        public CuboidRegion getRegion() {
+            return this.region;
+        }
+
+        public Supplier<Short> getBlockSupplier() {
+            return this.blockSupplier;
+        }
+
     }
 
     @Getter
@@ -89,6 +101,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public synchronized void addCuboidEdit(CuboidEdit edit) {
         if (cuboidEdits == null)
             cuboidEdits = new ArrayList<>();
+            cuboidEdits = new ArrayList<>();
 
         this.cuboidEdits.add(edit);
 
@@ -98,6 +111,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             editedSections |= 1 << i;
         }
     }
+
+    public abstract void setBiome(int x, int z, byte biome);
 
     public abstract short getCombinedBlockSync(int x, int y, int z);
 
