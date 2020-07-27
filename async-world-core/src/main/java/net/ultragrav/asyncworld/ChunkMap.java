@@ -1,4 +1,4 @@
-package main.java.net.ultragrav.asyncworld;
+package net.ultragrav.asyncworld;
 
 import java.util.ArrayList;
 import java.util.List;

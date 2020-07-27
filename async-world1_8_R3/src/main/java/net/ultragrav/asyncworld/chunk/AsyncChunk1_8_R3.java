@@ -1,12 +1,10 @@
-package main.java.net.ultragrav.asyncworld.chunk;
-
-import com.soraxus.prisons.util.world.Vector;
-import main.java.net.ultragrav.asyncworld.AsyncChunk;
-import main.java.net.ultragrav.asyncworld.AsyncWorld;
-import main.java.net.ultragrav.asyncworld.ChunkLocation;
-
+package net.ultragrav.asyncworld.chunk;
 
 import net.minecraft.server.v1_8_R3.*;
+import net.ultragrav.asyncworld.AsyncChunk;
+import net.ultragrav.asyncworld.AsyncWorld;
+import net.ultragrav.asyncworld.ChunkLocation;
+import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_8_R3.CraftChunk;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
@@ -37,7 +35,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
 
     private net.minecraft.server.v1_8_R3.Chunk getNmsChunk() {
         ChunkLocation loc = this.getLoc();
-        return ((CraftChunk) Bukkit.loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
+        return ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
         //return null;
     }
 
@@ -159,7 +157,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
                         continue;
                     boolean edit = false;
                     for (CuboidEdit edits : cuboidEdits) {
-                        if (edits.getRegion().contains(new Vector(lx + bx, ly + (sectionIndex << 4), lz + bz))) {
+                        if (edits.getRegion().contains(new Vector3D(lx + bx, ly + (sectionIndex << 4), lz + bz))) {
                             edit = true;
                             block = (int) edits.getBlockSupplier().get();
                             if(block == 0)

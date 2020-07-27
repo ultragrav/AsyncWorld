@@ -1,8 +1,8 @@
-package main.java.net.ultragrav.asyncworld.chunk;
+package net.ultragrav.asyncworld.chunk;
 
-import main.java.net.ultragrav.asyncworld.AsyncChunk;
-import main.java.net.ultragrav.asyncworld.AsyncWorld;
-import main.java.net.ultragrav.asyncworld.ChunkLocation;
+import net.ultragrav.asyncworld.AsyncChunk;
+import net.ultragrav.asyncworld.AsyncWorld;
+import net.ultragrav.asyncworld.ChunkLocation;
 import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;

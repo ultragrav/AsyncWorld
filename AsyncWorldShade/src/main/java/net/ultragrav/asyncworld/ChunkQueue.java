@@ -1,4 +1,4 @@
-package main.java.net.ultragrav.asyncworld;
+package net.ultragrav.asyncworld;
 
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;

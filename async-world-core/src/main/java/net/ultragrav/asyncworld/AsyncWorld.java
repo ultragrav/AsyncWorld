@@ -1,6 +1,6 @@
-package main.java.net.ultragrav.asyncworld;
+package net.ultragrav.asyncworld;
 
-import main.java.net.ultragrav.asyncworld.schematics.Schematic;
+import net.ultragrav.asyncworld.schematics.Schematic;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;

@@ -1,7 +1,6 @@
-package main.java.net.ultragrav.asyncworld;
+package net.ultragrav.asyncworld;
 
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.ultragrav.utils.CuboidRegion;
 import org.bukkit.Bukkit;
@@ -16,39 +15,12 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
     //TODO calculate lighting (we can do this one tmw together)
 
-    protected static class GUChunkSection {
-        public short[] contents = new short[4096];
-    }
-
-    public static class CuboidEdit {
-        private CuboidRegion region;
-        private Supplier<Short> blockSupplier;
-
-        public CuboidEdit(CuboidRegion region, Supplier<Short> blockSupplier) {
-            this.region = region;
-            this.blockSupplier = blockSupplier;
-        }
-
-        public CuboidRegion getRegion() {
-            return this.region;
-        }
-
-        public Supplier<Short> getBlockSupplier() {
-            return this.blockSupplier;
-        }
-
-    }
-
+    protected GUChunkSection[] chunkSections = new GUChunkSection[16];
+    protected List<CuboidEdit> cuboidEdits;
     @Getter
     private ChunkLocation loc;
-
-    protected GUChunkSection[] chunkSections = new GUChunkSection[16];
-
     @Getter(AccessLevel.PROTECTED)
     private int editedSections;
-
-    protected List<CuboidEdit> cuboidEdits;
-
     @Getter
     private AsyncWorld parent;
 
@@ -101,7 +73,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public synchronized void addCuboidEdit(CuboidEdit edit) {
         if (cuboidEdits == null)
             cuboidEdits = new ArrayList<>();
-            cuboidEdits = new ArrayList<>();
+        cuboidEdits = new ArrayList<>();
 
         this.cuboidEdits.add(edit);
 
@@ -153,4 +125,27 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     protected abstract void update();
 
     protected abstract void loadFromChunk(int sectionMask);
+
+    protected static class GUChunkSection {
+        public short[] contents = new short[4096];
+    }
+
+    public static class CuboidEdit {
+        private CuboidRegion region;
+        private Supplier<Short> blockSupplier;
+
+        public CuboidEdit(CuboidRegion region, Supplier<Short> blockSupplier) {
+            this.region = region;
+            this.blockSupplier = blockSupplier;
+        }
+
+        public CuboidRegion getRegion() {
+            return this.region;
+        }
+
+        public Supplier<Short> getBlockSupplier() {
+            return this.blockSupplier;
+        }
+
+    }
 }

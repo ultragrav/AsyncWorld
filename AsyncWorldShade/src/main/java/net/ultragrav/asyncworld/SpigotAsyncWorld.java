@@ -1,4 +1,4 @@
-package main.java.net.ultragrav.asyncworld;
+package net.ultragrav.asyncworld;
 
 import lombok.Getter;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;

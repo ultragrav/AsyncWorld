@@ -1,4 +1,4 @@
-package main.java.net.ultragrav.asyncworld;
+package net.ultragrav.asyncworld;
 
 public class BlockUtils {
     public static int convert(AsyncBlockData data) {

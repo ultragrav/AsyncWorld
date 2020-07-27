@@ -1,4 +1,4 @@
-package main.java.net.ultragrav.asyncworld.schematics;
+package net.ultragrav.asyncworld.schematics;
 
 import lombok.AllArgsConstructor;
 import net.ultragrav.asyncworld.*;
@@ -47,10 +47,9 @@ public class Schematic implements GravSerializable {
         System.arraycopy(copy.blocks, 0, blocks, 0, blocks.length);
     }
 
-    public Schematic(IntVector3D origin, CuboidRegion region) {
+    public Schematic(IntVector3D origin, AsyncWorld world, CuboidRegion region) {
         this.origin = origin;
         this.dimensions = region.getMaximumPoint().subtract(region.getMinimumPoint()).add(Vector3D.ONE).asIntVector();
-        AsyncWorld world = new SpigotAsyncWorld(region.getWorld());
         this.blocks = new int[region.getHeight()][region.getWidth()][region.getLength()];
 
         Vector3D min = region.getMinimumPoint();
