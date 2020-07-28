@@ -38,6 +38,13 @@ public abstract class AsyncWorld {
      */
     public abstract void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<Vector3D, Integer, TagCompound> action, boolean multiThread);
 
+    /**
+     * If anyone reading this at any point DOES NOT know what a Tile Entity is, here is an explanation <br></br>
+     * Tile Entities are sort of "entities" that have a fixed BLOCK POSITION (only ints) and don't move, they are <br></br>
+     * basically just NBTTagCompounds assigned to certain block positions. Chests have tile entities (actually now called block entities) <br></br>
+     * that contain data about the chest such as customName, containedItems, position, etc. Item frames have data on what item is contained and in what rotation etc. <br></br>
+     * For more information visit the gamepedia page on Block Entities
+     */
     public abstract void setTile(int x, int y, int z, TagCompound tag);
 
     public abstract void setBlock(int x, int y, int z, int id, byte data);
