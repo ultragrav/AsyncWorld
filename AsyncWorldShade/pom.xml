@@ -7,11 +7,11 @@
     <parent>
         <artifactId>AsyncWorld</artifactId>
         <groupId>net.ultragrav</groupId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>AsyncWorldShade</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <build>
         <plugins>
@@ -57,18 +57,18 @@
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>async-world-core</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>async-world1_8_R3</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>async-world1_12_R1</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

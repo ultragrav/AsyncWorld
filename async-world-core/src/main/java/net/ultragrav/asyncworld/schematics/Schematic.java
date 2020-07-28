@@ -30,10 +30,10 @@ public class Schematic implements GravSerializable {
     public Schematic(GravSerializer serializer) {
         int formatVersion = 0;
         try {
-            formatVersion = serializer.readInt();
+            formatVersion = serializer.readObject();
         } catch (Exception ignored) {
+            serializer.reset();
         }
-        ;
         this.dimensions = serializer.readObject();
         this.origin = serializer.readObject();
         blocks = ArrayUtils.castArrayToTripleInt(serializer.readObject());
