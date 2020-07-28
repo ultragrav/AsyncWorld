@@ -4,6 +4,7 @@ import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.minecraft.server.v1_12_R1.*;
+import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
@@ -35,7 +36,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     private Map<BlockPosition, TileEntity> tilesToRemove = new HashMap<>();
-    private Map<BlockPosition, TileEntity> tilesToAdd = new HashMap<>();
 
     private Chunk getNmsChunk() {
         ChunkLocation loc = this.getLoc();
@@ -62,12 +62,20 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         tilesToRemove.clear();
 
         //Add tile entities
-        tilesToAdd.forEach((bp, te) -> {
-            nmsChunk.getWorld().setTileEntity(bp, te); //Set in world (also sets block position and world of tile entity)
-            nmsChunk.getTileEntities().put(bp, te); //Set in chunk
+        getTilesToAdd().forEach((intVector3D, te) -> {
+            BlockPosition bp = new BlockPosition(intVector3D.getX(), intVector3D.getY(), intVector3D.getZ());
+            TileEntity entity = nmsChunk.getWorld().getTileEntity(bp); //Get or Create tile entity or null if none is applicable to the block at that position
+            if(entity != null) {
+                //Set Tile Entity's Coordinates in it's NBT
+                te.getData().put("x", new TagInt(bp.getX()));
+                te.getData().put("y", new TagInt(bp.getY()));
+                te.getData().put("z", new TagInt(bp.getZ()));
+
+                entity.load(fromGenericCompound(te)); //Load NBT into tile entity
+            }
         });
 
-        tilesToAdd.clear();
+        getTilesToAdd().clear();
 
         this.sendPackets(mask);
     }
@@ -206,5 +214,43 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 }
             }
         }
+    }
+
+    private NBTTagCompound fromGenericCompound(TagCompound compound) {
+        return (NBTTagCompound) fromGenericTag(compound);
+    }
+
+    private NBTBase fromGenericTag(Tag tag) {
+        if(tag instanceof TagCompound) {
+            NBTTagCompound compound = new NBTTagCompound();
+            Map<String, Tag> tags = ((TagCompound)tag).getData();
+            tags.forEach((k, t) -> compound.set(k, fromGenericTag(t)));
+            return compound;
+        } else if(tag instanceof TagShort) {
+            return new NBTTagShort(((TagShort)tag).getData());
+        } else if(tag instanceof TagLong) {
+            return new NBTTagLong(((TagLong)tag).getData());
+        } else if(tag instanceof TagLongArray) {
+            return new NBTTagLongArray(((TagLongArray)tag).getData());
+        } else if(tag instanceof TagInt) {
+            return new NBTTagInt(((TagInt)tag).getData());
+        } else if(tag instanceof TagByte) {
+            return new NBTTagByte(((TagByte)tag).getData());
+        } else if(tag instanceof TagByteArray) {
+            return new NBTTagByteArray(((TagByteArray)tag).getData());
+        } else if(tag instanceof TagString) {
+            return new NBTTagString(((TagString)tag).getData());
+        } else if(tag instanceof TagList) {
+            NBTTagList list = new NBTTagList();
+            ((TagList)tag).getData().forEach(t -> list.add(fromGenericTag(t)));
+            return list;
+        } else if(tag instanceof TagIntArray) {
+            return new NBTTagIntArray(((TagIntArray)tag).getData());
+        } else if(tag instanceof TagFloat) {
+            return new NBTTagFloat(((TagFloat)tag).getData());
+        } else if(tag instanceof TagDouble) {
+            return new NBTTagDouble(((TagDouble)tag).getData());
+        }
+        throw new IllegalArgumentException("Tag is not of a recognized type (" + tag.getClass().getName() + ")");
     }
 }
