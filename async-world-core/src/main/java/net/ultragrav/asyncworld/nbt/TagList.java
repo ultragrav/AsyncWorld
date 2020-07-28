@@ -2,6 +2,7 @@ package net.ultragrav.asyncworld.nbt;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import net.ultragrav.serializer.GravSerializer;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor
 public class TagList extends Tag {
     private List<Tag> data;
 
@@ -18,6 +20,6 @@ public class TagList extends Tag {
     }
 
     public static TagList deserialize(GravSerializer serializer) {
-        return serializer.readObject();
+        return new TagList(serializer.readObject());
     }
 }

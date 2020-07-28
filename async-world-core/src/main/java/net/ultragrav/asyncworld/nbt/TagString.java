@@ -16,6 +16,6 @@ public class TagString extends Tag {
     }
 
     public TagString deserialize(GravSerializer serializer) {
-        return serializer.readObject();
+        return new TagString(serializer.readObject());
     }
 }

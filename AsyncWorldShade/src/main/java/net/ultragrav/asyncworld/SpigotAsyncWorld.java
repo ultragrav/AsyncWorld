@@ -3,6 +3,7 @@ package net.ultragrav.asyncworld;
 import lombok.Getter;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_8_R3;
+import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.schematics.Schematic;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
@@ -104,6 +105,9 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 }
             }
         }
+
+        //Set tiles
+        schematic.getTiles().forEach((p, t) -> setTile(p.getX(), p.getY(), p.getZ(), t));
     }
 
     @Override
@@ -143,6 +147,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public void syncForAllInRegion(CuboidRegion region, BiConsumer<Vector3D, Integer> action, boolean multiThread) {
+        syncForAllInRegion(region, (a, b, c) -> action.accept(a, b), multiThread);
+    }
+
+    @Override
+    public void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<Vector3D, Integer, TagCompound> action, boolean multiThread) {
         if (!Bukkit.isPrimaryThread()) {
             Bukkit.getLogger().info("Called syncForAllInRegion from asynchronous thread!");
             return;
@@ -162,7 +171,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                         chunk.getBukkitChunk().load(true);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
                         int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
-                        action.accept(new Vector3D(x, y, z), block);
+                        action.accept(new Vector3D(x, y, z), block, chunk.getTile(x & 15, y, z & 15));
                     }
                 }
             }
@@ -199,7 +208,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                             for(int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                                 for(int y = minBlockY; y <= maxBlockY; y++) {
                                     int block = chunk.getCombinedBlockSync(x, y, z);
-                                    action.accept(new Vector3D(x + bx, y, z + bz), block);
+                                    action.accept(new Vector3D(x, y, z), block, chunk.getTile(x & 15, y, z & 15));
                                 }
                             }
                         }
@@ -218,6 +227,12 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 futures.clear();
             }
         }
+    }
+
+    @Override
+    public void setTile(int x, int y, int z, TagCompound tag) {
+        AsyncChunk chunk = getChunk(x >> 4, z >> 4);
+        chunk.setTileEntity(x & 15, y, z & 15, tag);
     }
 
     @Override

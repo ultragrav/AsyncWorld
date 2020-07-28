@@ -12,6 +12,7 @@ import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 
@@ -69,7 +70,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
 
         tilesToRemove.clear();
 
-        getTilesToAdd().forEach((intVector3D, te) -> {
+        getTiles().forEach((intVector3D, te) -> {
             BlockPosition bp = new BlockPosition(intVector3D.getX(), intVector3D.getY(), intVector3D.getZ());
             TileEntity entity = nmsChunk.getWorld().getTileEntity(bp); //Get or Create tile entity or null if none is applicable to the block at that position
             if(entity != null) {
@@ -82,7 +83,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
             }
         });
 
-        getTilesToAdd().clear();
+        getTiles().clear();
 
         this.sendPackets(mask);
 
@@ -215,10 +216,60 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
                     for(int z = 0; z < 16; z++) {
                         int block = section != null ? Block.getCombinedId(sections[sectionIndex].getType(x, y, z)) : 0;
                         this.writeBlock(x, y + (sectionIndex << 4), z, block & 4095, (byte) (block >>> 12));
+                        BlockPosition position = new BlockPosition(x + (this.getLoc().getX() << 4), y + (sectionIndex << 4), z + (this.getLoc().getZ() << 4));
+                        TileEntity entity = chunk.getTileEntities().get(position);
+                        if(entity != null) {
+                            NBTTagCompound compound = new NBTTagCompound();
+                            entity.b(compound); //Save tile entity data to the compound tag
+                            this.setTileEntity(position.getX(), position.getY(), position.getZ(), fromNMSCompound(compound));
+                        } else {
+                            this.setTileEntity(position.getX(), position.getY(), position.getZ(), null); //Removes it from tiles if argument is null
+                        }
                     }
                 }
             }
         }
+    }
+
+    private TagCompound fromNMSCompound(NBTTagCompound compound) {
+        return (TagCompound) fromNMSTag(compound);
+    }
+
+    private Tag fromNMSTag(NBTBase base) {
+        if(base instanceof NBTTagCompound) {
+            TagCompound compound = new TagCompound();
+            for(String key : ((NBTTagCompound)base).c()) {
+                compound.getData().put(key, fromNMSTag(((NBTTagCompound)base).get(key)));
+            }
+            return compound;
+        } else if(base instanceof NBTTagList) {
+            TagList list = new TagList();
+            for(int i = 0; i < ((NBTTagList)base).size(); i++) {
+                list.getData().add(fromNMSTag(((NBTTagList)base).get(i)));
+            }
+            return list;
+        } else if(base instanceof NBTTagShort) {
+            return new TagShort(((NBTTagShort)base).e());
+        } else if(base instanceof NBTTagLong) {
+            return new TagLong(((NBTTagLong)base).c());
+        } else if(base instanceof NBTTagInt) {
+            return new TagInt(((NBTTagInt)base).d());
+        } else if(base instanceof NBTTagByte) {
+            return new TagByte(((NBTTagByte)base).f());
+        } else if(base instanceof NBTTagIntArray) {
+            return new TagIntArray(((NBTTagIntArray)base).c());
+        } else if(base instanceof NBTTagDouble) {
+            return new TagDouble(((NBTTagDouble)base).g());
+        } else if(base instanceof NBTTagByteArray) {
+            return new TagByteArray(((NBTTagByteArray)base).c());
+        } else if(base instanceof NBTTagEnd) {
+            return new TagEnd();
+        } else if(base instanceof NBTTagFloat) {
+            return new TagFloat(((NBTTagFloat)base).h());
+        } else if(base instanceof NBTTagString) {
+            return new TagString(((NBTTagString)base).a_());
+        }
+        throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
     }
 
     private NBTTagCompound fromGenericCompound(TagCompound compound) {

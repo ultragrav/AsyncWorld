@@ -29,7 +29,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     private AsyncWorld parent;
 
     @Getter(AccessLevel.PROTECTED)
-    private Map<IntVector3D, TagCompound> tilesToAdd = new HashMap<>();
+    private Map<IntVector3D, TagCompound> tiles = new HashMap<>();
 
     public AsyncChunk(AsyncWorld parent, ChunkLocation loc) {
         this.parent = parent;
@@ -52,13 +52,20 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         chunkSections[y >>> 4].contents[x << 8 | z << 4 | y & 15] = (short) (data << 12 | (id > 0 ? id & 4095 : id));
         editedSections |= 1 << (y >>> 4);
 
-        if(hasTileEntity(id)) {
+        if (hasTileEntity(id)) {
             setTileEntity(x, y, z, new TagCompound());
         }
     }
 
     public void setTileEntity(int x, int y, int z, TagCompound tag) {
-        this.tilesToAdd.put(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z), tag);
+        if (tag == null)
+            this.tiles.remove(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z));
+        else
+            this.tiles.put(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z), tag);
+    }
+
+    public TagCompound getTile(int x, int y, int z) {
+        return this.tiles.get(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z));
     }
 
     /**

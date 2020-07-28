@@ -17,6 +17,6 @@ public class TagLong extends Tag {
     }
 
     public static TagLong deserialize(GravSerializer serializer) {
-        return serializer.readObject();
+        return new TagLong(serializer.readObject());
     }
 }
