@@ -6,6 +6,7 @@ import net.ultragrav.asyncworld.ChunkLocation;
 import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.utils.Vector3D;
+import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
 import java.lang.reflect.Field;
@@ -216,6 +217,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         TileEntity entity = chunk.getTileEntities().get(position);
                         if(entity != null) {
                             this.setTileEntity(position.getX(), position.getY(), position.getZ(), fromNMSCompound(entity.save(new NBTTagCompound())));
+                            Bukkit.broadcastMessage("Found tile entity while loading chunk. Tile Entity at " + position.getX() + " " + position.getY() + " " + position.getZ());
                         } else {
                             this.setTileEntity(position.getX(), position.getY(), position.getZ(), null); //Removes it from tiles if argument is null
                         }

@@ -73,11 +73,7 @@ public class Schematic implements GravSerializable {
         this.dimensions = region.getMaximumPoint().subtract(region.getMinimumPoint()).add(Vector3D.ONE).asIntVector();
         this.blocks = new int[region.getHeight()][region.getWidth()][region.getLength()];
 
-        Bukkit.broadcastMessage(region.getMinimumPoint() + " -> MIN");
-
         IntVector3D min = region.getMinimumPoint().asIntVector();
-
-        Bukkit.broadcastMessage(min + " -> MIN_INT");
 
         squareSize = dimensions.getX() * dimensions.getZ();
         lineSize = dimensions.getZ();
@@ -87,8 +83,10 @@ public class Schematic implements GravSerializable {
 
             blocks[relLoc.getY()][relLoc.getX()][relLoc.getZ()] = block;
 
-            if (tag != null)
+            if (tag != null) {
                 tiles.put(relLoc, tag);
+                Bukkit.broadcastMessage("Tile entity found");
+            }
         }, true);
     }
 

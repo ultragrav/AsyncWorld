@@ -107,7 +107,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
         }
 
         //Set tiles
-        schematic.getTiles().forEach((p, t) -> setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t));
+        IntVector3D finalPosition = position;
+        schematic.getTiles().forEach((p, t) -> {
+            setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t);
+            Bukkit.broadcastMessage("Setting tile at " + finalPosition);
+        });
     }
 
     @Override
