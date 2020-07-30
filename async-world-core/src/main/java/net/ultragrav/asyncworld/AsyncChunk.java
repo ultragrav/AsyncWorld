@@ -75,10 +75,6 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
      * NOTE: This is not done on creation so if you need to read blocks, refresh manually
      */
     public synchronized void refresh(int sectionMask) {
-        if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getLogger().info("Called AsyncChunk.refresh() from asynchronous thread!");
-            return;
-        }
         this.loadFromChunk(sectionMask);
     }
 

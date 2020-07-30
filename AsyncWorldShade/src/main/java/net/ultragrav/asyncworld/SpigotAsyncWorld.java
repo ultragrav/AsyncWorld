@@ -165,7 +165,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
         long ms = System.currentTimeMillis();
 
-        this.syncFastRefreshChunksInRegion(region, 10000);
+        this.syncFastRefreshChunksInRegion(region, 100000);
 
         int threads = Runtime.getRuntime().availableProcessors();
 
