@@ -210,6 +210,9 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
         net.minecraft.server.v1_8_R3.Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
         for(int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+            if ((sectionMask >> sectionIndex & 1) == 0)
+                continue;
+
             ChunkSection section = sections[sectionIndex];
             for(int x = 0; x < 16; x++){
                 for(int y = 0; y < 16; y++) {

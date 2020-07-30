@@ -204,7 +204,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-            if ((sectionIndex >> sectionIndex & 1) == 0)
+            if ((sectionMask >> sectionIndex & 1) == 0)
                 continue;
 
             ChunkSection section = sections[sectionIndex];
