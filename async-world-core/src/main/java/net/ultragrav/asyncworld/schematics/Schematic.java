@@ -7,6 +7,7 @@ import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
 import net.ultragrav.utils.*;
+import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -72,7 +73,11 @@ public class Schematic implements GravSerializable {
         this.dimensions = region.getMaximumPoint().subtract(region.getMinimumPoint()).add(Vector3D.ONE).asIntVector();
         this.blocks = new int[region.getHeight()][region.getWidth()][region.getLength()];
 
+        Bukkit.broadcastMessage(region.getMinimumPoint() + " -> MIN");
+
         IntVector3D min = region.getMinimumPoint().asIntVector();
+
+        Bukkit.broadcastMessage(min + " -> MIN_INT");
 
         squareSize = dimensions.getX() * dimensions.getZ();
         lineSize = dimensions.getZ();
