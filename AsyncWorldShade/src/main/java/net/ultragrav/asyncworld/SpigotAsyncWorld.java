@@ -165,6 +165,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
         long ms = System.currentTimeMillis();
 
+        this.syncFastRefreshChunksInRegion(region, 10000);
+
         int threads = Runtime.getRuntime().availableProcessors();
 
         if (threads == 1 || !multiThread) {
@@ -174,7 +176,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     if(!chunk.isChunkLoaded())
                         chunk.getBukkitChunk().load(true);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
-                        int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
+                        int block = chunk.readBlock(x & 15, y, z & 15);
                         action.accept(new Vector3D(x, y, z), block, chunk.getTile(x & 15, y, z & 15));
                     }
                 }
@@ -211,7 +213,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                         for(int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
                             for(int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                                 for(int y = minBlockY; y <= maxBlockY; y++) {
-                                    int block = chunk.getCombinedBlockSync(x, y, z);
+                                    int block = chunk.readBlock(x, y, z);
                                     action.accept(new Vector3D(x + (chunk.getLoc().getX() << 4), y, z + (chunk.getLoc().getZ() << 4)), block, chunk.getTile(x & 15, y, z & 15));
                                 }
                             }
