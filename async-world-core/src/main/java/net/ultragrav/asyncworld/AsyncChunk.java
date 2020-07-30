@@ -60,9 +60,11 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public void setTileEntity(int x, int y, int z, TagCompound tag) {
         if (tag == null)
             this.tiles.remove(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z));
-        else
+        else {
             this.tiles.put(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z), tag);
-    }
+            editedSections |= 1 << (y >>> 4);
+        }
+        }
 
     public TagCompound getTile(int x, int y, int z) {
         return this.tiles.get(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z));
