@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TagList extends Tag {
-    private List<Tag> data;
+    private List<Tag> data = new ArrayList<>();
 
     @Override
     public void serialize(GravSerializer gravSerializer) {
