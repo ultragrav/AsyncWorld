@@ -241,26 +241,19 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     private Tag fromNMSTag(NBTBase base) {
-        Bukkit.broadcastMessage("Type " + base.getClass().getSimpleName());
         if(base instanceof NBTTagCompound) {
             TagCompound compound = new TagCompound();
-            Bukkit.broadcastMessage("COMPOUND OF SIZE " + ((NBTTagCompound)base).d() + ": ");
             for(String key : ((NBTTagCompound)base).c()) {
-                Bukkit.broadcastMessage("- " + key);
                 compound.getData().put(key, fromNMSTag(((NBTTagCompound)base).get(key)));
             }
-            Bukkit.broadcastMessage("COMPOUND END");
             return compound;
         } else if(base instanceof NBTTagList) {
-            Bukkit.broadcastMessage("LIST:");
             TagList list = new TagList();
             for(int i = 0; i < ((NBTTagList)base).size(); i++) {
-                list.getData().add(fromNMSTag(((NBTTagList)base).get(i)));
+                list.getData().add(fromNMSTag(((NBTTagList)base).i(i)));
             }
-            Bukkit.broadcastMessage("LIST END:");
             return list;
         } else if(base instanceof NBTTagLongArray) {
-            Bukkit.broadcastMessage("LONG ARRAY");
             try {
                 return new TagLongArray((long[]) fieldLongArray.get(base));
             } catch (IllegalAccessException e) {
@@ -272,29 +265,21 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         } else if(base instanceof NBTTagLong) {
             return new TagLong(((NBTTagLong)base).d());
         } else if(base instanceof NBTTagInt) {
-            TagInt tagInt = new TagInt(((NBTTagInt)base).e());
-            Bukkit.broadcastMessage("INTEGER: " + tagInt.getData());
-            return tagInt;
+            return new TagInt(((NBTTagInt)base).e());
         } else if(base instanceof NBTTagByte) {
-            Bukkit.broadcastMessage("BYTE: " + ((NBTTagByte)base).g());
             return new TagByte(((NBTTagByte)base).g());
         } else if(base instanceof NBTTagIntArray) {
-            Bukkit.broadcastMessage("INT ARRAY: ");
             return new TagIntArray(((NBTTagIntArray)base).d());
         } else if(base instanceof NBTTagDouble) {
-            Bukkit.broadcastMessage("DOUBLE: ");
             return new TagDouble(((NBTTagDouble)base).asDouble());
         } else if(base instanceof NBTTagByteArray) {
-            Bukkit.broadcastMessage("BYTE ARRAY: ");
             return new TagByteArray(((NBTTagByteArray)base).c());
         } else if(base instanceof NBTTagEnd) {
             return new TagEnd();
         } else if(base instanceof NBTTagFloat) {
             return new TagFloat(((NBTTagFloat)base).i());
         } else if(base instanceof NBTTagString) {
-            TagString string = new TagString(((NBTTagString)base).c_());
-            Bukkit.broadcastMessage("STRING: " + string.getData());
-            return string;
+            return new TagString(((NBTTagString)base).c_());
         }
         throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
     }

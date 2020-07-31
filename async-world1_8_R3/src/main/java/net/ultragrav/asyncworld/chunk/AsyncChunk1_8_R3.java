@@ -248,7 +248,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
         } else if(base instanceof NBTTagList) {
             TagList list = new TagList();
             for(int i = 0; i < ((NBTTagList)base).size(); i++) {
-                list.getData().add(fromNMSTag(((NBTTagList)base).get(i)));
+                list.getData().add(fromNMSTag(((NBTTagList)base).g(i)));
             }
             return list;
         } else if(base instanceof NBTTagShort) {

@@ -85,7 +85,6 @@ public class Schematic implements GravSerializable {
 
             if (tag != null) {
                 tiles.put(relLoc, tag);
-                Bukkit.broadcastMessage("Tile entity found");
             }
         }, true);
     }
