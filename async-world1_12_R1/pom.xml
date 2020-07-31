@@ -11,13 +11,12 @@
     </parent>
 
     <artifactId>async-world1_12_R1</artifactId>
-    <version>1.0.1</version>
 
     <dependencies>
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>async-world-core</artifactId>
-            <version>1.0.1</version>
+            <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

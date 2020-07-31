@@ -10,9 +10,12 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-@NoArgsConstructor
 public class TagList extends Tag {
-    private List<Tag> data = new ArrayList<>();
+    private List<Tag> data;
+
+    public TagList() {
+        data = new ArrayList<>();
+    }
 
     @Override
     public void serialize(GravSerializer gravSerializer) {

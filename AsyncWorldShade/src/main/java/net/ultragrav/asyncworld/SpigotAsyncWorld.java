@@ -110,7 +110,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
         IntVector3D finalPosition = position;
         schematic.getTiles().forEach((p, t) -> {
             setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t);
-            Bukkit.broadcastMessage("Setting tile at " + finalPosition);
         });
     }
 
@@ -214,7 +213,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                             for(int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                                 for(int y = minBlockY; y <= maxBlockY; y++) {
                                     int block = chunk.readBlock(x, y, z);
-                                    action.accept(new Vector3D(x + (chunk.getLoc().getX() << 4), y, z + (chunk.getLoc().getZ() << 4)), block, chunk.getTile(x & 15, y, z & 15));
+                                    action.accept(new Vector3D(x + (chunk.getLoc().getX() << 4), y, z + (chunk.getLoc().getZ() << 4)), block, chunk.getTile(x, y, z));
                                 }
                             }
                         }

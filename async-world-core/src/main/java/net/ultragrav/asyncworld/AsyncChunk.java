@@ -8,10 +8,7 @@ import net.ultragrav.utils.IntVector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
@@ -58,16 +55,18 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     public void setTileEntity(int x, int y, int z, TagCompound tag) {
-        if (tag == null)
-            this.tiles.remove(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z));
-        else {
-            this.tiles.put(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z), tag);
+        IntVector3D vec = new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z);
+        if (tag == null) {
+            this.tiles.remove(vec);
+        } else {
+            this.tiles.put(vec, tag);
             editedSections |= 1 << (y >>> 4);
         }
     }
 
     public TagCompound getTile(int x, int y, int z) {
-        return this.tiles.get(new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z));
+        IntVector3D vec = new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z);
+        return this.tiles.get(vec);
     }
 
     /**

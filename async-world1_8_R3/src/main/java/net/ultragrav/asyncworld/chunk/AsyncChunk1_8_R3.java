@@ -224,9 +224,9 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
                         if(entity != null) {
                             NBTTagCompound compound = new NBTTagCompound();
                             entity.b(compound); //Save tile entity data to the compound tag
-                            this.setTileEntity(position.getX(), position.getY(), position.getZ(), fromNMSCompound(compound));
+                            this.setTileEntity(x, position.getY(), z, fromNMSCompound(compound));
                         } else {
-                            this.setTileEntity(position.getX(), position.getY(), position.getZ(), null); //Removes it from tiles if argument is null
+                            this.setTileEntity(x, position.getY(), z, null); //Removes it from tiles if argument is null
                         }
                     }
                 }
