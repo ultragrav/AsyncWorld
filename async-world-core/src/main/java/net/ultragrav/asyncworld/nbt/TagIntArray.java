@@ -15,7 +15,7 @@ public class TagIntArray extends Tag {
         gravSerializer.writeObject(data);
     }
 
-    public TagIntArray deserialize(GravSerializer serializer) {
+    public static TagIntArray deserialize(GravSerializer serializer) {
         return new TagIntArray(serializer.readObject());
     }
 }
