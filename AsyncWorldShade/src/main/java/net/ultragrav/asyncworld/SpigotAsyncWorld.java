@@ -24,15 +24,12 @@ import java.util.function.Supplier;
  * Also works as a sort-of edit queue
  */
 public class SpigotAsyncWorld extends AsyncWorld {
-    private ChunkQueue chunkQueue;
-
     private static ExecutorService executor = Executors.newCachedThreadPool();
-
-    private UUID world;
-    private ChunkMap chunkMap = new ChunkMap(this);
-
     @Getter
     protected String serverVersion;
+    private ChunkQueue chunkQueue;
+    private UUID world;
+    private ChunkMap chunkMap = new ChunkMap(this);
 
     public SpigotAsyncWorld(World world) {
         this(world, GlobalChunkQueue.instance);
@@ -172,7 +169,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
                     AsyncChunk chunk = getChunk(x >> 4, z >> 4);
-                    if(!chunk.isChunkLoaded())
+                    if (!chunk.isChunkLoaded())
                         chunk.getBukkitChunk().load(true);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
                         int block = chunk.readBlock(x & 15, y, z & 15);
@@ -209,9 +206,9 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     futures.add(executor.submit(() -> {
                         int bx = chunk.getLoc().getX() << 4;
                         int bz = chunk.getLoc().getZ() << 4;
-                        for(int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
-                            for(int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
-                                for(int y = minBlockY; y <= maxBlockY; y++) {
+                        for (int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
+                            for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
+                                for (int y = minBlockY; y <= maxBlockY; y++) {
                                     int block = chunk.readBlock(x, y, z);
                                     action.accept(new Vector3D(x + (chunk.getLoc().getX() << 4), y, z + (chunk.getLoc().getZ() << 4)), block, chunk.getTile(x, y, z));
                                 }
@@ -221,7 +218,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     }));
                 }
                 futures.forEach(f -> {
-                    if(f == null)
+                    if (f == null)
                         return;
                     try {
                         f.get();
@@ -325,7 +322,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
         if (threads == 1) {
             chunks.forEach(c -> {
-                if(!c.isChunkLoaded())
+                if (!c.isChunkLoaded())
                     c.getBukkitChunk().load(true);
                 c.refresh(finalSectionMask);
             });
@@ -342,7 +339,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     }));
                 }
                 futures.forEach(f -> {
-                    if(f == null)
+                    if (f == null)
                         return;
                     try {
                         f.get();

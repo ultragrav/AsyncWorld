@@ -13,8 +13,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Schematic implements GravSerializable {
 
@@ -51,11 +53,19 @@ public class Schematic implements GravSerializable {
         this(new GravSerializer(new FileInputStream(file), true));
     }
 
-    //TODO tile entities for rotate and subSchem
     public Schematic(IntVector3D origin, IntVector3D dimensions, int[][][] blocks) {
         this.origin = origin;
         this.dimensions = dimensions;
         this.blocks = blocks;
+        squareSize = dimensions.getY() * dimensions.getZ();
+        lineSize = dimensions.getZ();
+    }
+
+    public Schematic(IntVector3D origin, IntVector3D dimensions, int[][][] blocks, Map<IntVector3D, TagCompound> tiles) {
+        this.origin = origin;
+        this.dimensions = dimensions;
+        this.blocks = blocks;
+        this.tiles = tiles;
         squareSize = dimensions.getY() * dimensions.getZ();
         lineSize = dimensions.getZ();
     }
@@ -138,14 +148,22 @@ public class Schematic implements GravSerializable {
 
         int[][][] newArr = new int[dimensions.getY()][xSize][zSize];
         for (int i = 0; i < blocks.length; i++) {
-            for (int x = 0; x < xSize; x++) {
-                for (int z = 0; z < zSize; z++) {
+            for (int x = 0; x < dimensions.getX(); x++) {
+                for (int z = 0; z < dimensions.getZ(); z++) {
                     CoordinatePair pair = converter.convert(x, z, xSize, zSize);
-                    newArr[i][pair.x][pair.z] = blocks[i][x][z];
+                    newArr[i][pair.x][pair.z] = BlockConverter.rotate(blocks[i][x][z], rotation);
                 }
             }
         }
-        return new Schematic(origin, newDimensions, newArr);
+
+        Map<IntVector3D, TagCompound> newTiles = tiles.entrySet().stream().map((entry) -> {
+            IntVector3D loc = entry.getKey();
+
+            CoordinatePair pair = converter.convert(loc.getX(), loc.getZ(), xSize, zSize);
+
+            return new AbstractMap.SimpleEntry<>(new IntVector3D(pair.x, loc.getY(), pair.z), entry.getValue());
+        }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new Schematic(origin, newDimensions, newArr, newTiles);
     }
 
     @Override
