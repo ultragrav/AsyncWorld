@@ -15,7 +15,7 @@ public class TagInt extends Tag {
         gravSerializer.writeInt(data);
     }
 
-    public TagInt deserialize(GravSerializer serializer) {
+    public static TagInt deserialize(GravSerializer serializer) {
         return new TagInt(serializer.readInt());
     }
 }
