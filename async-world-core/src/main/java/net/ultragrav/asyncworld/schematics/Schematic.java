@@ -148,7 +148,7 @@ public class Schematic implements GravSerializable {
 
     @Override
     public void serialize(GravSerializer serializer) {
-        serializer.writeInt(FORMAT_VERSION);
+        serializer.writeObject(FORMAT_VERSION);
         serializer.writeObject(this.dimensions);
         serializer.writeObject(this.origin);
         serializer.writeObject(this.blocks);
