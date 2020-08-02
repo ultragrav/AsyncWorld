@@ -29,6 +29,8 @@ public class Schematic implements GravSerializable {
     private final int lineSize;
 
     public Schematic(GravSerializer serializer) {
+
+        //If format doesn't exist its format 0
         int formatVersion = 0;
         try {
             formatVersion = serializer.readObject();
