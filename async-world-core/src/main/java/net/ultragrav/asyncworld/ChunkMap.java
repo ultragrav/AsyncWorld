@@ -16,7 +16,7 @@ public class ChunkMap {
         return new ArrayList<>(chunks);
     }
 
-    public boolean contains(ChunkLocation location) {
+    public synchronized boolean contains(ChunkLocation location) {
         for (AsyncChunk chunk : chunks) {
             if (chunk.getLoc().equals(location))
                 return true;
