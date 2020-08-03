@@ -16,21 +16,13 @@ import java.util.*;
 public class AsyncChunk1_12_R1 extends AsyncChunk {
     public AsyncChunk1_12_R1(AsyncWorld parent, ChunkLocation loc) {
         super(parent, loc);
-        Arrays.fill(biomes, (byte) -1);
-    }
-
-    private byte[] biomes = new byte[256];
-
-    @Override
-    public void setBiome(int x, int z, byte biome) {
-        biomes[z << 4 | x] = biome;
     }
 
     @Override
     public short getCombinedBlockSync(int x, int y, int z) {
         Chunk nmsChunk = getNmsChunk();
         ChunkSection[] sections = nmsChunk.getSections();
-        ChunkSection section = sections[y >> 4];
+        ChunkSection section = sections[y >>> 4];
         if (section == null) {
             return 0;
         }
@@ -129,7 +121,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
         ChunkSection[] sections = nmsChunk.getSections();
         for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
-            if ((this.getEditedSections() >> sectionIndex & 1) == 0)
+            if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
                 continue;
             ChunkSection section = sections[sectionIndex];
             if (section == null) {
@@ -204,7 +196,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-            if ((sectionMask >> sectionIndex & 1) == 0)
+            if ((sectionMask >>> sectionIndex & 1) == 0)
                 continue;
 
             ChunkSection section = sections[sectionIndex];

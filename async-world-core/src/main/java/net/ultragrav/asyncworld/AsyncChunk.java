@@ -17,7 +17,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     //TODO calculate lighting (we can do this one tmw together)
 
     protected GUChunkSection[] chunkSections = new GUChunkSection[16];
-    protected List<CuboidEdit> cuboidEdits;
+    protected List<CuboidEdit> cuboidEdits = new ArrayList<>();
     @Getter
     private ChunkLocation loc;
     @Getter(AccessLevel.PROTECTED)
@@ -28,9 +28,20 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     @Getter(AccessLevel.PROTECTED)
     private Map<IntVector3D, TagCompound> tiles = new HashMap<>();
 
+    protected byte[] biomes = new byte[256];
+
     public AsyncChunk(AsyncWorld parent, ChunkLocation loc) {
         this.parent = parent;
         this.loc = loc;
+        Arrays.fill(biomes, (byte) -1);
+    }
+
+    public synchronized void setBiome(int x, int z, int biome) {
+        biomes[z << 4 | x] = (byte) biome;
+    }
+
+    public synchronized int getBiome(int x, int z) {
+        return biomes[z << 4 | x];
     }
 
     public synchronized void writeBlock(int x, int y, int z, int id, byte data) {
@@ -69,6 +80,39 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         return this.tiles.get(vec);
     }
 
+    private synchronized void _merge(AsyncChunk parent) {
+        parent.cuboidEdits.addAll(this.cuboidEdits);
+        parent.tiles.putAll(this.tiles);
+        parent.biomes = biomes;
+        GUChunkSection[] sections = this.chunkSections;
+        for (int i = 0, sectionsLength = sections.length; i < sectionsLength; i++) {
+            GUChunkSection section = sections[i];
+            if(section == null)
+                continue;
+            if((editedSections >>> i & 1) == 1) {
+                if(parent.chunkSections[i] == null) {
+                    parent.chunkSections[i] = section;
+                } else {
+                    GUChunkSection parentSection = parent.chunkSections[i];
+                    short[] contents = section.contents;
+                    for (int j = 0, contentsLength = contents.length; j < contentsLength; j++) {
+                        short s = contents[j];
+                        if(s != 0) {
+                            parentSection.contents[j] = s;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Basically adds the chunks edits to this
+     */
+    public synchronized void merge(AsyncChunk chunk) {
+        chunk._merge(this);
+    }
+
     /**
      * Loads the actual chunk's data into this instance
      * NOTE: This is not done on creation so if you need to read blocks, refresh manually
@@ -90,8 +134,6 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     public synchronized void addCuboidEdit(CuboidEdit edit) {
-        if (cuboidEdits == null)
-            cuboidEdits = new ArrayList<>();
         cuboidEdits = new ArrayList<>();
 
         this.cuboidEdits.add(edit);
@@ -102,8 +144,6 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             editedSections |= 1 << i;
         }
     }
-
-    public abstract void setBiome(int x, int z, byte biome);
 
     public abstract short getCombinedBlockSync(int x, int y, int z);
 

@@ -24,13 +24,6 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
         Arrays.fill(biomes, (byte) -1);
     }
 
-    private byte[] biomes = new byte[256];
-
-    @Override
-    public void setBiome(int x, int z, byte biome) {
-        biomes[z << 4 | x] = biome;
-    }
-
     private boolean loaded;
     private Map<BlockPosition, TileEntity> tilesToRemove = new HashMap<>();
 

@@ -16,8 +16,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Async safe world
@@ -268,7 +270,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
             return false;
         List<AsyncChunk> edited = chunkMap.getCachedCopy();
         edited.removeIf(c -> !c.isEdited());
-        chunkQueue.update(edited, timeoutMs);
+        List<QueuedChunk> queue = edited.stream().map((c) -> new QueuedChunk(c, null)).collect(Collectors.toList());
+        chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
         this.chunkMap.clear();
         return edited.isEmpty();
     }
