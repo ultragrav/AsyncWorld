@@ -143,7 +143,7 @@ public class ChunkQueue implements Listener {
         this.queue.removeAll(chunks);
     }
 
-    public CompletableFuture<Void> queueChunk(AsyncChunk chunk) {
+    public synchronized CompletableFuture<Void> queueChunk(AsyncChunk chunk) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         this.callbacks.put(queue.size(), future);
         this.queue.add(chunk);
