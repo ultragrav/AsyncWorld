@@ -49,7 +49,7 @@ public class ChunkQueue implements Listener {
                 listLock.lock();
                 AsyncChunk chunk;
                 try {
-                    if(chunks.size() > 0) {
+                    if (chunks.size() > 0) {
                         chunk = chunks.get(0).getChunk();
                         callbacks.add(chunks.get(0).getCallback());
                         chunks.remove(0);
@@ -109,7 +109,6 @@ public class ChunkQueue implements Listener {
             }
         }
         if (chunks.isEmpty()) {
-            Bukkit.broadcastMessage("Finished queue");
             //Got rid of cancelTask so this runs every tick
             //That way if a chunk is scheduled it could be updated on the same tick instead of 1 tick later
 
@@ -143,7 +142,7 @@ public class ChunkQueue implements Listener {
             synchronized (this) {
                 List<CompletableFuture<Void>> callbacks = update(queue, listLock, WORK_TIME_PER_TICK_MS);
                 callbacks.forEach(c -> {
-                    if(c == null)
+                    if (c == null)
                         return;
                     c.complete(null);
                 });
@@ -160,9 +159,14 @@ public class ChunkQueue implements Listener {
     }
 
     public CompletableFuture<Void> queueChunk(AsyncChunk chunk, CompletableFuture<Void> future) {
+        if (chunk.getParent() == null || chunk.getParent().getBukkitWorld() == null) {
+            future.complete(null);
+            return future;
+        }
         listLock.lock();
         try {
             QueuedChunk queuedChunk = new QueuedChunk(chunk, future);
+
             //Check if we should merge
             for (QueuedChunk queuedChunk1 : queue) {
                 if (queuedChunk1.getChunk().getLoc().equals(chunk.getLoc())) {
@@ -199,10 +203,13 @@ public class ChunkQueue implements Listener {
     public synchronized CompletableFuture<Void> queueChunks(List<AsyncChunk> chunks) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         listLock.lock();
-        for(AsyncChunk chunk : chunks) {
-            this.queueChunk(chunk, future);
+        try {
+            for (AsyncChunk chunk : chunks) {
+                this.queueChunk(chunk, future);
+            }
+        } finally {
+            listLock.unlock();
         }
-        listLock.unlock();
         return future;
     }
 

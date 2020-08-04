@@ -45,6 +45,16 @@ public class BlockConverter {
         } else if (mat.name().contains("TORCH")) {
             if (data != 1)
                 data = rotateData4((byte) (data - 1)) + 1;
+        } else if (mat.name().contains("LOG")) {
+            if(data < 11 && data > 3) {
+                int l = data - 4;
+                int l1 = l >>> 2;
+                l1 += 1;
+                l1 &= 1;
+                l1 <<= 2;
+                l = l1 + (l & 7);
+                data = l + 4;
+            }
         }
         return data << 12 | id;
     }
