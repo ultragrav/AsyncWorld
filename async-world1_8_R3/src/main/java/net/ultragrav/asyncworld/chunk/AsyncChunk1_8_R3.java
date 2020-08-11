@@ -5,6 +5,7 @@ import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.nbt.*;
+import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_8_R3.CraftChunk;
@@ -202,6 +203,13 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
     protected void loadFromChunk(int sectionMask) {
         net.minecraft.server.v1_8_R3.Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
+
+        Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
+        tiles.forEach((p, t) -> {
+            if(((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
+                setTileEntity(p.getX() >> 4, p.getY(), p.getZ() >> 4, null);
+        });
+
         for(int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
             if ((sectionMask >> sectionIndex & 1) == 0)
                 continue;
@@ -211,20 +219,21 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
                 for(int y = 0; y < 16; y++) {
                     for(int z = 0; z < 16; z++) {
                         int block = section != null ? Block.getCombinedId(sections[sectionIndex].getType(x, y, z)) : 0;
-                        this.writeBlock(x, y + (sectionIndex << 4), z, block & 4095, (byte) (block >>> 12));
-                        BlockPosition position = new BlockPosition(x + (this.getLoc().getX() << 4), y + (sectionIndex << 4), z + (this.getLoc().getZ() << 4));
-                        TileEntity entity = chunk.getTileEntities().get(position);
-                        if(entity != null) {
-                            NBTTagCompound compound = new NBTTagCompound();
-                            entity.b(compound); //Save tile entity data to the compound tag
-                            this.setTileEntity(x, position.getY(), z, fromNMSCompound(compound));
-                        } else {
-                            this.setTileEntity(x, position.getY(), z, null); //Removes it from tiles if argument is null
-                        }
+                        this.writeBlock(x, y + (sectionIndex << 4), z, block & 0xFFF, (byte) (block >>> 12));
                     }
                 }
             }
         }
+
+        //Do this after writing blocks
+        chunk.getTileEntities().forEach((p, t) -> {
+            if(t == null)
+                return;
+            NBTTagCompound compound = new NBTTagCompound();
+            t.b(compound);
+            this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(compound));
+        });
+
     }
 
     private TagCompound fromNMSCompound(NBTTagCompound compound) {

@@ -51,14 +51,15 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             return;
         if (y > 255)
             return;
-        if (id == 0)
+        if (id == 0) {
             id = -1;
+        }
 
-        if (chunkSections[y >>> 4] == null)
-            chunkSections[y >>> 4] = new GUChunkSection();
+        if (chunkSections[y >> 4] == null)
+            chunkSections[y >> 4] = new GUChunkSection();
 
-        chunkSections[y >>> 4].contents[x << 8 | z << 4 | y & 15] = (short) (data << 12 | (id > 0 ? id & 4095 : id));
-        editedSections |= 1 << (y >>> 4);
+        chunkSections[y >> 4].contents[x << 8 | z << 4 | y & 15] = (short) (data << 12 | (id > 0 ? id & 4095 : id));
+        editedSections |= 1 << (y >> 4);
 
         if (hasTileEntity(id)) {
             setTileEntity(x, y, z, new TagCompound());
@@ -71,7 +72,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             this.tiles.remove(vec);
         } else {
             this.tiles.put(vec, tag);
-            editedSections |= 1 << (y >>> 4);
+            editedSections |= 1 << (y >> 4);
         }
     }
 
@@ -126,11 +127,11 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             return -1;
         if (y > 255)
             return -1;
-        GUChunkSection section = chunkSections[y >>> 4];
+        GUChunkSection section = chunkSections[y >> 4];
         if (section == null)
             return -1;
         short data = section.contents[x << 8 | z << 4 | y & 15];
-        return data == 0 ? -1 : (data == -1 ? 0 : data);
+        return data == 0 ? -1 : (data == -1 ? 0 : (int)data & 0xFFFF);
     }
 
     public synchronized void addCuboidEdit(CuboidEdit edit) {

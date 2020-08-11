@@ -67,7 +67,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public int syncGetBlock(int x, int y, int z) {
-        return getChunk(x >> 4, z >> 4).getCombinedBlockSync(x & 15, y, z & 15);
+        return getChunk(x >> 4, z >> 4).getCombinedBlockSync(x & 15, y, z & 15) & 0xFFFF;
     }
 
     /**
@@ -99,17 +99,15 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
                 for (int y = posY; y < maxY; y++) {
                     int block = schematic.getBlockAt(x - posX, y - posY, z - posZ);
-                    //Bukkit.broadcastMessage("(" + x + ", " + y + ", " + z + ") -> " + block);
+                    if(block == -1)
+                        continue;
                     currentChunk.writeBlock(x & 0xF, y, z & 0xF, block & 0xFFF, (byte) (block >>> 12));
                 }
             }
         }
 
         //Set tiles
-        IntVector3D finalPosition = position;
-        schematic.getTiles().forEach((p, t) -> {
-            setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t);
-        });
+        schematic.getTiles().forEach((p, t) -> setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t));
     }
 
     @Override
@@ -162,7 +160,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
             return;
 
         long ms = System.currentTimeMillis();
-
         this.syncFastRefreshChunksInRegion(region, 100000);
 
         int threads = Runtime.getRuntime().availableProcessors();
@@ -201,6 +198,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
             Iterator<AsyncChunk> it = chunks.iterator();
             List<Future<Void>> futures = new ArrayList<>();
+            ms = System.currentTimeMillis();
             while (it.hasNext()) {
                 for (int i = 0; i < threads && it.hasNext(); i++) {
                     AsyncChunk chunk = it.next();

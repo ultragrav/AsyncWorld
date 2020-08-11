@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class Schematic implements GravSerializable {
 
-    private static final int FORMAT_VERSION = 1;
+    private static final int FORMAT_VERSION = 2;
 
     private final IntVector3D origin;
     private final IntVector3D dimensions;
@@ -42,9 +42,8 @@ public class Schematic implements GravSerializable {
         this.dimensions = serializer.readObject();
         this.origin = serializer.readObject();
         blocks = ArrayUtils.castArrayToTripleInt(serializer.readObject());
-        if (formatVersion > 0) {
+        if (formatVersion > 0)
             tiles = serializer.readObject();
-        }
         squareSize = dimensions.getY() * dimensions.getZ();
         lineSize = dimensions.getZ();
     }
@@ -81,6 +80,10 @@ public class Schematic implements GravSerializable {
     }
 
     public Schematic(IntVector3D origin, AsyncWorld world, CuboidRegion region) {
+        this(origin, world, region, -1);
+    }
+
+    public Schematic(IntVector3D origin, AsyncWorld world, CuboidRegion region, int ignoreBlock) {
         this.origin = origin;
         this.dimensions = region.getMaximumPoint().subtract(region.getMinimumPoint()).add(Vector3D.ONE).asIntVector();
         this.blocks = new int[region.getHeight()][region.getWidth()][region.getLength()];
@@ -93,16 +96,18 @@ public class Schematic implements GravSerializable {
         world.syncForAllInRegion(region, (loc, block, tag) -> {
             IntVector3D relLoc = loc.asIntVector().subtract(min);
 
+            if (block == ignoreBlock && ignoreBlock != -1)
+                block = -1;
             blocks[relLoc.getY()][relLoc.getX()][relLoc.getZ()] = block;
 
-            if (tag != null) {
+            if (tag != null && block != -1) {
                 tiles.put(relLoc, tag);
             }
         }, true);
     }
 
-    public int getBlockAt(Vector3D relLoc) {
-        return getBlockAt(relLoc.getBlockY(), relLoc.getBlockX(), relLoc.getBlockZ());
+    public int getBlockAt(IntVector3D relLoc) {
+        return getBlockAt(relLoc.getY(), relLoc.getX(), relLoc.getZ());
     }
 
     public int getBlockAt(int x, int y, int z) {
