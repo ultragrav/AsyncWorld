@@ -19,9 +19,9 @@ public class ChunkLocation {
 
     @Override
     public boolean equals(Object o) {
-        if(!(o instanceof ChunkLocation))
+        if (!(o instanceof ChunkLocation))
             return false;
-        if(o == this)
+        if (o == this)
             return true;
         return getX() == ((ChunkLocation) o).getX() && getZ() == ((ChunkLocation) o).getZ() && world.getBukkitWorld().getUID().equals(((ChunkLocation) o).getWorld().getBukkitWorld().getUID());
     }
