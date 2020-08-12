@@ -6,6 +6,7 @@ import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
+import net.ultragrav.serializer.compressors.ZstdCompressor;
 import net.ultragrav.utils.*;
 import org.bukkit.Bukkit;
 
@@ -49,7 +50,7 @@ public class Schematic implements GravSerializable {
     }
 
     public Schematic(File file) throws IOException {
-        this(new GravSerializer(new FileInputStream(file), true));
+        this(new GravSerializer(new FileInputStream(file), ZstdCompressor.instance));
     }
 
     public Schematic(IntVector3D origin, IntVector3D dimensions, int[][][] blocks) {
@@ -130,7 +131,7 @@ public class Schematic implements GravSerializable {
     public void save(File file) throws IOException {
         GravSerializer serializer = new GravSerializer();
         serialize(serializer);
-        serializer.writeToStream(new FileOutputStream(file), true);
+        serializer.writeToStream(new FileOutputStream(file), ZstdCompressor.instance);
     }
 
     public Schematic rotate(int rotation) {
