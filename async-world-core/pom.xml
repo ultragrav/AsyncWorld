@@ -22,7 +22,7 @@
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>Utils</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.0/version>
             <exclusions>
                 <exclusion>
                     <groupId>org.spigotmc</groupId>
