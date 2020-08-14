@@ -154,7 +154,7 @@ public class ChunkQueue implements Listener {
         }
     }
 
-    public void startWork() {
+    public synchronized void startWork() {
         taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
             List<CompletableFuture<Void>> callbacks = update(queue, listLock, WORK_TIME_PER_TICK_MS);
             callbacks.forEach(c -> {
