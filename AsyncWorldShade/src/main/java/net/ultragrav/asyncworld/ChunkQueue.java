@@ -72,29 +72,41 @@ public class ChunkQueue implements Listener {
                     Map<AsyncChunk, Integer> masks = new ConcurrentHashMap<>();
 
                     //Lock it so that while we schedule the tasks, the list isn't changed
+                    List<AsyncChunk> todo = new ArrayList<>();
+
+                    //Get chunks
                     listLock.lock();
                     try {
                         for (int i = 0; i < THREADS && chunks.size() > 0 && System.currentTimeMillis() - ms < time; i++) { // Spawn THREAD threads
                             AsyncChunk chunk = chunks.get(0).getChunk();
                             callbacks.add(chunks.get(0).getCallback());
                             chunks.remove(0);
-                            chunk.start();
-
-                            CompletableFuture<AsyncChunk> future = new CompletableFuture<>();
-
-                            //NOTE this is a just the scheduling of the task, not the execution, so this doesn't take long
-                            executor.execute(() -> {
-                                synchronized (chunk) {
-                                    masks.put(chunk, chunk.getEditedSections());
-                                    chunk.call();
-                                }
-                                future.complete(chunk);
-                            });
-                            futures.add(future);
+                            todo.add(chunk);
                         }
                     } finally {
                         listLock.unlock(); //Unlock
                     }
+
+                    //Schedule
+                    todo.removeIf(chunk -> {
+
+                        chunk.start();
+
+                        CompletableFuture<AsyncChunk> future = new CompletableFuture<>();
+
+                        //NOTE this is a just the scheduling of the task, not the execution, so this doesn't take long
+                        executor.execute(() -> {
+                            synchronized (chunk) { //synchronized so the editedSections is correct
+                                masks.put(chunk, chunk.getEditedSections());
+                                chunk.call();
+                            }
+                            future.complete(chunk);
+                        });
+                        futures.add(future);
+                        return true;
+                    });
+
+                    //Wait
                     Iterator<CompletableFuture<AsyncChunk>> futureIterator = futures.iterator();
                     CompletableFuture<AsyncChunk> future;
                     while (futureIterator.hasNext()) {
@@ -130,28 +142,35 @@ public class ChunkQueue implements Listener {
     }
 
     public synchronized void cancelTask() {
-        if (taskId == -1) {
-            return;
+        listLock.lock();
+        try {
+            if (taskId == -1) {
+                return;
+            }
+            Bukkit.getScheduler().cancelTask(taskId);
+            taskId = -1;
+        } finally {
+            listLock.unlock();
         }
-        Bukkit.getScheduler().cancelTask(taskId);
-        taskId = -1;
     }
 
-    public synchronized void startWork() {
+    public void startWork() {
         taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            synchronized (this) {
-                List<CompletableFuture<Void>> callbacks = update(queue, listLock, WORK_TIME_PER_TICK_MS);
-                callbacks.forEach(c -> {
-                    if (c == null)
-                        return;
-                    c.complete(null);
-                });
-            }
+            List<CompletableFuture<Void>> callbacks = update(queue, listLock, WORK_TIME_PER_TICK_MS);
+            callbacks.forEach(c -> {
+                if (c == null)
+                    return;
+                c.complete(null);
+            });
         }, 1, 1);
     }
 
-    public synchronized int getQueueSize() {
-        return this.queue.size();
+    public int getQueueSize() {
+        try {
+            return this.queue.size();
+        } finally {
+            this.listLock.lock();
+        }
     }
 
     public CompletableFuture<Void> queueChunk(AsyncChunk chunk) {
