@@ -14,10 +14,17 @@ import java.util.function.Supplier;
 
 public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
+    //Blocks location indexes stored as yzx
+
     //TODO calculate lighting (we can do this one tmw together)
 
+    protected static short[] airFilled = new short[4096];
+
+    static {
+        Arrays.fill(airFilled, (short) -1);
+    }
+
     protected GUChunkSection[] chunkSections = new GUChunkSection[16];
-    protected List<CuboidEdit> cuboidEdits = new ArrayList<>();
     @Getter
     private ChunkLocation loc;
     @Getter(AccessLevel.PROTECTED)
@@ -26,7 +33,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     private AsyncWorld parent;
 
     @Getter(AccessLevel.PROTECTED)
-    private Map<IntVector3D, TagCompound> tiles = new HashMap<>();
+    private final Map<IntVector3D, TagCompound> tiles = new HashMap<>();
 
     protected byte[] biomes = new byte[256];
 
@@ -34,6 +41,25 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         this.parent = parent;
         this.loc = loc;
         Arrays.fill(biomes, (byte) -1);
+    }
+
+    public int getLX(int loc) {
+        return loc & 0xF;
+    }
+
+    public int getLY(int loc) {
+        return loc >>> 8;
+    }
+
+    public int getLZ(int loc) {
+        return loc >>> 4 & 0xF;
+    }
+
+    /**
+     * Please only use with numbers <16
+     */
+    public int getCombinedLoc(int x, int y, int z) {
+        return y << 8 | z << 4 | x;
     }
 
     public synchronized void setBiome(int x, int z, int biome) {
@@ -44,8 +70,28 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         return biomes[z << 4 | x];
     }
 
+    public synchronized void writeBlock(int section, int index, int combinedBlockId, boolean addTile) {
+        if (chunkSections[section] == null)
+            chunkSections[section] = new GUChunkSection();
+
+        chunkSections[section].contents[index] = (short) combinedBlockId;
+        editedSections |= 1 << (section);
+
+        if (addTile && hasTileEntity(combinedBlockId & 0xFFF)) {
+            setTileEntity(getLX(index), getLY(index) + (section << 4), getLZ(index), new TagCompound());
+        }
+    }
+
+    public synchronized void writeBlock(int section, int index, int combinedBlockId) {
+        writeBlock(section, index, combinedBlockId, true);
+    }
+
     public synchronized void writeBlock(int x, int y, int z, int id, byte data) {
-        if (id < 0 && id != -2)
+        writeBlock(x, y, z, id, data, true);
+    }
+
+    public synchronized void writeBlock(int x, int y, int z, int id, byte data, boolean addTile) {
+        if (id < 0 && id != -1)
             throw new IllegalArgumentException("ID cannot be less than 0 (air)");
         if (y < 0)
             return;
@@ -53,17 +99,11 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             return;
         if (id == 0) {
             id = -1;
+        } else if(id == -1) {
+            id = 0;
+            data = 0;
         }
-
-        if (chunkSections[y >> 4] == null)
-            chunkSections[y >> 4] = new GUChunkSection();
-
-        chunkSections[y >> 4].contents[x << 8 | z << 4 | y & 15] = (short) (data << 12 | (id > 0 ? id & 4095 : id));
-        editedSections |= 1 << (y >> 4);
-
-        if (hasTileEntity(id)) {
-            setTileEntity(x, y, z, new TagCompound());
-        }
+        writeBlock(y >>> 4, getCombinedLoc(x & 0xF, y & 0xF, z & 0xF), (data << 12 | (id > 0 ? id & 0xFFF : id) & 0xFFFF), addTile);
     }
 
     public synchronized void setTileEntity(int x, int y, int z, TagCompound tag) {
@@ -82,23 +122,22 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     private synchronized void _merge(AsyncChunk parent) {
-        parent.cuboidEdits.addAll(this.cuboidEdits);
         parent.tiles.putAll(this.tiles);
         parent.biomes = biomes;
         GUChunkSection[] sections = this.chunkSections;
         for (int i = 0, sectionsLength = sections.length; i < sectionsLength; i++) {
             GUChunkSection section = sections[i];
-            if(section == null)
+            if (section == null)
                 continue;
-            if((editedSections >>> i & 1) == 1) {
-                if(parent.chunkSections[i] == null) {
+            if ((editedSections >>> i & 1) == 1) {
+                if (parent.chunkSections[i] == null) {
                     parent.chunkSections[i] = section;
                 } else {
                     GUChunkSection parentSection = parent.chunkSections[i];
                     short[] contents = section.contents;
                     for (int j = 0, contentsLength = contents.length; j < contentsLength; j++) {
                         short s = contents[j];
-                        if(s != 0) {
+                        if (s != 0) {
                             parentSection.contents[j] = s;
                         }
                     }
@@ -130,23 +169,21 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         GUChunkSection section = chunkSections[y >> 4];
         if (section == null)
             return -1;
-        short data = section.contents[x << 8 | z << 4 | y & 15];
-        return data == 0 ? -1 : (data == -1 ? 0 : (int)data & 0xFFFF);
-    }
-
-    public synchronized void addCuboidEdit(CuboidEdit edit) {
-        cuboidEdits = new ArrayList<>();
-
-        this.cuboidEdits.add(edit);
-
-        int minY = edit.getRegion().getMinimumY() >> 4;
-        int maxY = edit.getRegion().getMaximumY() >> 4;
-        for (int i = minY; i <= maxY; i++) {
-            editedSections |= 1 << i;
-        }
+        short data = section.contents[getCombinedLoc(x, y & 0xF, z)];
+        return data == 0 ? -1 : (data == -1 ? 0 : (int) data & 0xFFFF);
     }
 
     public abstract short getCombinedBlockSync(int x, int y, int z);
+
+    public synchronized void optimize() {
+        for(int i = 0; i < chunkSections.length; i++) {
+            if(chunkSections[i] != null) {
+                optimizeSection(i, chunkSections[i]);
+            }
+        }
+    }
+
+    protected abstract void optimizeSection(int index, GUChunkSection section);
 
     /**
      * Must be called sync
@@ -157,12 +194,11 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         this.update();
         this.editedSections = 0;
         this.chunkSections = new GUChunkSection[16];
-        this.cuboidEdits = null;
         return this;
     }
 
     public synchronized void setIgnore(int x, int y, int z) {
-        writeBlock(x, y, z, -2, (byte) 0);
+        writeBlock(x, y, z, -1, (byte) 0);
     }
 
     //Both of these are called sync before and after call() and update()
@@ -186,30 +222,25 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
     protected abstract void loadFromChunk(int sectionMask);
 
-    protected static class GUChunkSection {
+    public static class GUChunkSection {
         public short[] contents = new short[4096];
     }
 
-    public static class CuboidEdit {
-        private CuboidRegion region;
-        private Supplier<Short> blockSupplier;
+    public static boolean[] CACHE_TILE = new boolean[4096];
 
-        public CuboidEdit(CuboidRegion region, Supplier<Short> blockSupplier) {
-            this.region = region;
-            this.blockSupplier = blockSupplier;
+    static {
+        for(int i = 0, length = CACHE_TILE.length; i < length; i++) {
+            CACHE_TILE[i] = hasTileEntity(i);
         }
-
-        public CuboidRegion getRegion() {
-            return this.region;
-        }
-
-        public Supplier<Short> getBlockSupplier() {
-            return this.blockSupplier;
-        }
-
     }
 
-    public boolean hasTileEntity(int id) {
+    public static boolean hasTileEntity(int id) {
+        if(id > CACHE_TILE.length)
+            return true;
+        return CACHE_TILE[id];
+    }
+
+    public static boolean _hasTileEntity(int id) {
         //Credit to FastAsyncWorldEdit by boydti
         switch (id) {
             case 26:

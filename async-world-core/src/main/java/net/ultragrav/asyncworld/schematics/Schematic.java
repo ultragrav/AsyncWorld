@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Schematic implements GravSerializable {
@@ -27,7 +29,7 @@ public class Schematic implements GravSerializable {
     private final IntVector3D dimensions;
     private final int[][][] blocks;
     @Getter
-    private Map<IntVector3D, TagCompound> tiles = new HashMap<>();
+    private Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();
     private final int squareSize;
     private final int lineSize;
 
@@ -44,7 +46,7 @@ public class Schematic implements GravSerializable {
         this.origin = serializer.readObject();
         blocks = ArrayUtils.castArrayToTripleInt(serializer.readObject());
         if (formatVersion > 0)
-            tiles = serializer.readObject();
+            tiles = new ConcurrentHashMap<>(serializer.readObject());
         squareSize = dimensions.getY() * dimensions.getZ();
         lineSize = dimensions.getZ();
     }
@@ -77,7 +79,7 @@ public class Schematic implements GravSerializable {
         this.lineSize = copy.lineSize;
         blocks = new int[copy.blocks.length][][];
         System.arraycopy(copy.blocks, 0, blocks, 0, blocks.length);
-        tiles = new HashMap<>(copy.tiles); //Shallow copy, changes to nbt data in copied schematic will affect ones in this schematic -> may change later
+        tiles = new ConcurrentHashMap<>(copy.tiles); //Shallow copy, changes to nbt data in copied schematic will affect ones in this schematic -> may change later
     }
 
     public Schematic(IntVector3D origin, AsyncWorld world, CuboidRegion region) {
@@ -94,8 +96,13 @@ public class Schematic implements GravSerializable {
         squareSize = dimensions.getX() * dimensions.getZ();
         lineSize = dimensions.getZ();
 
+        AtomicInteger count = new AtomicInteger();
+        long time = System.currentTimeMillis();
+
         world.syncForAllInRegion(region, (loc, block, tag) -> {
             IntVector3D relLoc = loc.asIntVector().subtract(min);
+
+            count.getAndIncrement();
 
             if (block == ignoreBlock && ignoreBlock != -1)
                 block = -1;
@@ -105,6 +112,8 @@ public class Schematic implements GravSerializable {
                 tiles.put(relLoc, tag);
             }
         }, true);
+
+        Bukkit.broadcastMessage("Took " + (System.currentTimeMillis() - time) + "ms to parse " + count + " blocks");
     }
 
     public int getBlockAt(IntVector3D relLoc) {

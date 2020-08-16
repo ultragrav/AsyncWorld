@@ -9,6 +9,7 @@ import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.World;
 
 import java.util.ArrayList;
@@ -94,17 +95,24 @@ public class SpigotAsyncWorld extends AsyncWorld {
         int maxY = posY + schematic.getDimensions().getY();
         int maxZ = posZ + schematic.getDimensions().getZ();
 
+        List<AsyncChunk> edited = new ArrayList<>();
+
         for (int x = posX; x < maxX; x++) {
             for (int z = posZ; z < maxZ; z++) {
                 AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
                 for (int y = posY; y < maxY; y++) {
                     int block = schematic.getBlockAt(x - posX, y - posY, z - posZ);
-                    if(block == -1)
+                    if (block == -1)
                         continue;
                     currentChunk.writeBlock(x & 0xF, y, z & 0xF, block & 0xFFF, (byte) (block >>> 12));
                 }
+                if(!edited.contains(currentChunk))
+                    edited.add(currentChunk);
             }
         }
+
+        //Optimize
+        edited.forEach(AsyncChunk::optimize);
 
         //Set tiles
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t));
@@ -112,37 +120,20 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public void setBlocks(CuboidRegion region, Supplier<Short> blockSupplier) {
-        if (region.getArea() < 10000) {
-            //small edit
-            for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getX(); x++) {
-                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getZ(); z++) {
-                    AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
-                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getY(); y++) {
-                        int block = blockSupplier.get();
-                        currentChunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
-                    }
+        //small edit
+        List<AsyncChunk> edited = new ArrayList<>();
+        for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getX(); x++) {
+            for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getZ(); z++) {
+                AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
+                for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getY(); y++) {
+                    int block = blockSupplier.get();
+                    currentChunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
                 }
-            }
-        } else {
-            //medium - very large edit
-
-            //Get Chunks it intersects
-            Vector3D max = region.getMaximumPoint();
-            Vector3D min = region.getMinimumPoint();
-            int minI = min.getBlockX() >> 4;
-            int minJ = min.getBlockZ() >> 4;
-            int maxI = max.getBlockX() >> 4;
-            int maxJ = max.getBlockZ() >> 4;
-
-            AsyncChunk.CuboidEdit edit = new AsyncChunk.CuboidEdit(region, blockSupplier);
-
-            for (int i = minI; i <= maxI; i++) {
-                for (int j = minJ; j <= maxJ; j++) {
-                    AsyncChunk chunk = getChunk(i, j);
-                    chunk.addCuboidEdit(edit);
-                }
+                if(!edited.contains(currentChunk))
+                    edited.add(currentChunk);
             }
         }
+        edited.forEach(AsyncChunk::optimize);
     }
 
     @Override
@@ -329,27 +320,21 @@ public class SpigotAsyncWorld extends AsyncWorld {
             });
         } else {
             Iterator<AsyncChunk> it = chunks.iterator();
-            List<Future<Void>> futures = new ArrayList<>();
+            ForkJoinPool pool = new ForkJoinPool(threads);
             while (it.hasNext() && !(timeout != -1 && System.currentTimeMillis() - ms > timeout)) {
                 for (int i = 0; i < threads && it.hasNext(); i++) {
                     AsyncChunk chunk = it.next();
-                    chunk.getBukkitChunk().load();
-                    futures.add(executor.submit(() -> {
-                        chunk.refresh(finalSectionMask);
-                        return null;
-                    }));
+                    if (!chunk.isChunkLoaded())
+                        chunk.getBukkitChunk().load(true);
+                    Runnable runnable = () -> chunk.refresh(finalSectionMask);
+                    pool.submit(runnable);
                 }
-                futures.forEach(f -> {
-                    if (f == null)
-                        return;
-                    try {
-                        f.get();
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                });
-                futures.clear();
             }
+            while (!pool.isQuiescent())
+                pool.awaitQuiescence(1, TimeUnit.SECONDS);
+        }
+        for (AsyncChunk chunk : chunks) {
+            ChunkSnapshot snapshot = chunk.getBukkitChunk().getChunkSnapshot();
         }
     }
 }
