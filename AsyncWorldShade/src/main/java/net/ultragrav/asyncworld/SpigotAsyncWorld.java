@@ -333,8 +333,5 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
         }
-        for (AsyncChunk chunk : chunks) {
-            ChunkSnapshot snapshot = chunk.getBukkitChunk().getChunkSnapshot();
-        }
     }
 }

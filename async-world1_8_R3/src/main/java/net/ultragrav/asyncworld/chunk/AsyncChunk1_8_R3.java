@@ -165,7 +165,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
                     air++;
                 }
 
-                section.setType(lx, ly, lz, net.minecraft.server.v1_8_R3.Block.getByCombinedId(block));
+                section.setType(lx, ly, lz, net.minecraft.server.v1_8_R3.Block.getByCombinedId(block & 0xFFFF));
                 section.getSkyLightArray().a(lx, ly, lz, 15);
 
                 //Remove tile entity

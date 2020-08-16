@@ -113,7 +113,6 @@ public class Schematic implements GravSerializable {
             }
         }, true);
 
-        Bukkit.broadcastMessage("Took " + (System.currentTimeMillis() - time) + "ms to parse " + count + " blocks");
     }
 
     public int getBlockAt(IntVector3D relLoc) {

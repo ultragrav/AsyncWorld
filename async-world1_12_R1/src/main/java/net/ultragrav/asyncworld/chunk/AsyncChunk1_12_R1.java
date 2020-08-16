@@ -6,6 +6,7 @@ import net.ultragrav.asyncworld.ChunkLocation;
 import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.utils.IntVector3D;
+import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
 import java.lang.reflect.Field;
@@ -205,7 +206,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     air++;
                 }
 
-                section.setType(lx, ly, lz, Block.getByCombinedId(block));
+                section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
                 section.getSkyLightArray().a(lx, ly, lz, 15);
 
                 //Remove tile entity
@@ -262,7 +263,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             section.getBlocks().exportData(rawIds, rawData);
             byte[] data = rawData.asBytes();
             for (int i = 0, rawIdsLength = rawIds.length; i < rawIdsLength; i++) {
-                short id = (short) (rawIds[i] & 0xFFF);
+                short id = (short) (rawIds[i] & 0xFF);
                 if (id == 0) id = -1;
                 int off = i >>> 1;
                 byte dat = (byte) (data[off] >>> ((i & 1) << 2) & 15);

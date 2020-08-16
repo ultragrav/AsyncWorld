@@ -103,7 +103,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             id = 0;
             data = 0;
         }
-        writeBlock(y >>> 4, getCombinedLoc(x & 0xF, y & 0xF, z & 0xF), (data << 12 | (id > 0 ? id & 0xFFF : id) & 0xFFFF), addTile);
+        writeBlock(y >>> 4, getCombinedLoc(x & 0xF, y & 0xF, z & 0xF), ((data & 0xF) << 12 | (id > 0 ? id & 0xFFF : id) & 0xFFFF), addTile);
     }
 
     public synchronized void setTileEntity(int x, int y, int z, TagCompound tag) {
@@ -170,7 +170,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         if (section == null)
             return -1;
         short data = section.contents[getCombinedLoc(x, y & 0xF, z)];
-        return data == 0 ? -1 : (data == -1 ? 0 : (int) data & 0xFFFF);
+        return data == 0 ? -1 : (data == -1 ? 0 : (data & 0xFFFF));
     }
 
     public abstract short getCombinedBlockSync(int x, int y, int z);
