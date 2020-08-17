@@ -1,10 +1,14 @@
 package net.ultragrav.asyncworld;
 
+import org.bukkit.Bukkit;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ChunkMap {
-    private List<AsyncChunk> chunks = new ArrayList<>();
+    private Map<Long, AsyncChunk> chunks = new HashMap<>();
 
     private AsyncWorld parent;
 
@@ -13,27 +17,23 @@ public class ChunkMap {
     }
 
     public synchronized List<AsyncChunk> getCachedCopy() {
-        return new ArrayList<>(chunks);
+        return new ArrayList<>(chunks.values());
     }
 
-    public synchronized boolean contains(ChunkLocation location) {
-        for (AsyncChunk chunk : chunks) {
-            if (chunk.getLoc().equals(location))
-                return true;
-        }
-        return false;
+    public synchronized boolean contains(int cx, int cz) {
+        return chunks.containsKey(getChunkLocAsLong(cx, cz));
     }
 
     public synchronized void clear() {
         this.chunks.clear();
     }
 
+    private long getChunkLocAsLong(int cx, int cz) {
+        return (long) cx << 32 | (cz & 0xFFFFFFFFL);
+    }
+
     public synchronized AsyncChunk get(int cx, int cz) {
-        for (AsyncChunk chunk : chunks) {
-            if (chunk.getLoc().getX() == cx && chunk.getLoc().getZ() == cz)
-                return chunk;
-        }
-        return null;
+        return chunks.get(getChunkLocAsLong(cx, cz));
     }
 
     public synchronized AsyncChunk getOrMake(int cx, int cz) {
@@ -41,13 +41,14 @@ public class ChunkMap {
 
         if (chunk == null) {
             chunk = parent.getNewChunk(cx, cz);
-            chunks.add(chunk);
+            add(chunk);
         }
         return chunk;
     }
 
     public synchronized void add(AsyncChunk chunk) {
-        if (!this.contains(chunk.getLoc()))
-            this.chunks.add(chunk);
+        if (!this.contains(chunk.getLoc().getX(), chunk.getLoc().getZ())) {
+            this.chunks.put(getChunkLocAsLong(chunk.getLoc().getX(), chunk.getLoc().getZ()), chunk);
+        }
     }
 }

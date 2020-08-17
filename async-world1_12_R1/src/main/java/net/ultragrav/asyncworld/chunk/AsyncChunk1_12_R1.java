@@ -172,13 +172,26 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
             GUChunkSection guChunkSection = chunkSections[sectionIndex];
 
-            if (section == null) {
-                section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
-                if(guChunkSection != null) {
-                    System.arraycopy(guChunkSection.emittedLight, 0,
-                            section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
+            if (guChunkSection == null)
+                continue;
+
+            boolean completelyEdited = section == null;
+            if (!completelyEdited) {
+                completelyEdited = true;
+                for (long l : guChunkSection.edited) {
+                    if (l != -1L) {
+                        completelyEdited = false;
+                        break;
+                    }
                 }
-                if(optimizedSections[sectionIndex] != null) {
+            }
+
+            if (completelyEdited) {
+                if (section == null)
+                    section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+                System.arraycopy(guChunkSection.emittedLight, 0,
+                        section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
+                if (optimizedSections[sectionIndex] != null) {
                     try {
                         setPalette(section, optimizedSections[sectionIndex]); //Set palette
                         setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
@@ -190,13 +203,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 }
             }
 
-            short[] sectionContents = guChunkSection == null ? null : guChunkSection.contents;
+            short[] sectionContents = guChunkSection.contents;
 
             int air = 0;
 
             for (int i = 0; i < 4096; i++) {
 
-                short block = sectionContents != null ? sectionContents[i] : 0;
+                short block = sectionContents[i];
 
                 int lx = getLX(i);
                 int ly = getLY(i);
@@ -211,8 +224,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 }
 
                 section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
-                section.getSkyLightArray().a(lx, ly, lz, 15);
-                section.getEmittedLightArray().a(lx, ly, lz, getEmittedLight(lx, ly + (sectionIndex << 4), lz));
+                if(!completelyEdited) {
+                    section.getSkyLightArray().a(lx, ly, lz, 15);
+                    section.getEmittedLightArray().a(lx, ly, lz, getEmittedLight(lx, ly + (sectionIndex << 4), lz));
+                }
 
                 //Remove tile entity
                 BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);

@@ -70,19 +70,26 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         return biomes[z << 4 | x];
     }
 
-    public synchronized void writeBlock(int section, int index, int combinedBlockId, boolean addTile) {
+    protected synchronized void writeBlock(int section, int index, int combinedBlockId, boolean addTile) {
         if (chunkSections[section] == null)
             chunkSections[section] = new GUChunkSection();
 
         chunkSections[section].contents[index] = (short) combinedBlockId;
         editedSections |= 1 << (section);
+        int eIndex = index >>> 6;
+        int eIndexIndex = index & 63;
+
+        if (combinedBlockId != 0)
+            chunkSections[section].edited[eIndex] |= 1L << eIndexIndex;
+        else
+            chunkSections[section].edited[eIndex] &= ~(1L << eIndexIndex);
 
         if (addTile && hasTileEntity(combinedBlockId & 0xFFF)) {
             setTileEntity(getLX(index), getLY(index) + (section << 4), getLZ(index), new TagCompound());
         }
     }
 
-    public synchronized void writeBlock(int section, int index, int combinedBlockId) {
+    protected synchronized void writeBlock(int section, int index, int combinedBlockId) {
         writeBlock(section, index, combinedBlockId, true);
     }
 
@@ -99,7 +106,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             return;
         if (id == 0) {
             id = -1;
-        } else if(id == -1) {
+        } else if (id == -1) {
             id = 0;
             data = 0;
         }
@@ -114,11 +121,11 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         index >>>= 1;
 
         GUChunkSection section1 = chunkSections[section];
-        if(section1 == null)
+        if (section1 == null)
             section1 = chunkSections[section] = new GUChunkSection();
 
         int val = value << (part * 4);
-        int filter = 0xF << ((part^1) * 4);
+        int filter = 0xF << ((part ^ 1) * 4);
 
         section1.emittedLight[index] = (byte) (section1.emittedLight[index] & filter | val);
     }
@@ -129,7 +136,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         int part = index & 1;
         index >>>= 1;
 
-        if(chunkSections[section] == null)
+        if (chunkSections[section] == null)
             return 0;
 
         return chunkSections[section].emittedLight[index] >>> (part * 4) & 0xF;
@@ -170,6 +177,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
                             parentSection.contents[j] = s;
                         }
                     }
+                    System.arraycopy(section.emittedLight, 0, parentSection.emittedLight, 0, section.emittedLight.length);
                 }
             }
         }
@@ -205,8 +213,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public abstract short getCombinedBlockSync(int x, int y, int z);
 
     public synchronized void optimize() {
-        for(int i = 0; i < chunkSections.length; i++) {
-            if(chunkSections[i] != null) {
+        for (int i = 0; i < chunkSections.length; i++) {
+            if (chunkSections[i] != null) {
                 optimizeSection(i, chunkSections[i]);
             }
         }
@@ -254,18 +262,19 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public static class GUChunkSection {
         public short[] contents = new short[4096];
         public byte[] emittedLight = new byte[2048];
+        public long[] edited = new long[64];
     }
 
     public static boolean[] CACHE_TILE = new boolean[4096];
 
     static {
-        for(int i = 0, length = CACHE_TILE.length; i < length; i++) {
-            CACHE_TILE[i] = hasTileEntity(i);
+        for (int i = 0, length = CACHE_TILE.length; i < length; i++) {
+            CACHE_TILE[i] = _hasTileEntity(i);
         }
     }
 
     public static boolean hasTileEntity(int id) {
-        if(id > CACHE_TILE.length)
+        if (id > CACHE_TILE.length)
             return true;
         return CACHE_TILE[id];
     }

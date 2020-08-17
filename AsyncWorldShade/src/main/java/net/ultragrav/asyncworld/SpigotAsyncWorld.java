@@ -34,6 +34,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
     private ChunkQueue chunkQueue;
     private UUID world;
     private ChunkMap chunkMap = new ChunkMap(this);
+    private int sV = 0;
 
     public SpigotAsyncWorld(World world) {
         this(world, GlobalChunkQueue.instance);
@@ -46,6 +47,10 @@ public class SpigotAsyncWorld extends AsyncWorld {
         String name = Bukkit.getServer().getClass().getName();
         String[] parts = name.split("\\.");
         serverVersion = parts[3];
+        if (this.getServerVersion().startsWith("v1_12"))
+            sV = 1;
+        if (this.getServerVersion().startsWith("v1_8"))
+            sV = 0;
     }
 
     @Override
@@ -60,9 +65,9 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     protected AsyncChunk getNewChunk(int cx, int cz) {
-        if (this.getServerVersion().startsWith("v1_12"))
+        if (sV == 1)
             return new AsyncChunk1_12_R1(this, new ChunkLocation(this, cx, cz));
-        if (this.getServerVersion().startsWith("v1_8"))
+        if (sV == 0)
             return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
         return null;
     }
