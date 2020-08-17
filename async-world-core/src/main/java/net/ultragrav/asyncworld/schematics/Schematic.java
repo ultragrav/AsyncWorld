@@ -15,19 +15,26 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * Max dimensions: 256 x 2,100,000,000 x 2,100,000,000
+ * However, you would almost definitely run out of memory before even getting close to something that size
+ */
 public class Schematic implements GravSerializable {
 
-    private static final int FORMAT_VERSION = 2;
+    private static final int FORMAT_VERSION = 3;
 
     private final IntVector3D origin;
     private final IntVector3D dimensions;
     private final int[][][] blocks;
+    private final byte[][][] emittedLight;
     @Getter
     private Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();
     private final int squareSize;
@@ -47,6 +54,12 @@ public class Schematic implements GravSerializable {
         blocks = ArrayUtils.castArrayToTripleInt(serializer.readObject());
         if (formatVersion > 0)
             tiles = new ConcurrentHashMap<>(serializer.readObject());
+        if (formatVersion > 2) {
+            emittedLight = castArrayToTripleByte(serializer.readObject());
+        } else {
+            emittedLight = new byte[dimensions.getY()][dimensions.getX()][dimensions.getZ()];
+        }
+
         squareSize = dimensions.getY() * dimensions.getZ();
         lineSize = dimensions.getZ();
     }
@@ -55,10 +68,12 @@ public class Schematic implements GravSerializable {
         this(new GravSerializer(new FileInputStream(file), ZstdCompressor.instance));
     }
 
-    public Schematic(IntVector3D origin, IntVector3D dimensions, int[][][] blocks) {
+    public Schematic(IntVector3D origin, IntVector3D dimensions, int[][][] blocks, byte[][][] emittedLight, Map<IntVector3D, TagCompound> tiles) {
         this.origin = origin;
         this.dimensions = dimensions;
         this.blocks = blocks;
+        this.tiles = tiles;
+        this.emittedLight = emittedLight;
         squareSize = dimensions.getY() * dimensions.getZ();
         lineSize = dimensions.getZ();
     }
@@ -68,6 +83,7 @@ public class Schematic implements GravSerializable {
         this.dimensions = dimensions;
         this.blocks = blocks;
         this.tiles = tiles;
+        this.emittedLight = new byte[dimensions.getY()][dimensions.getX()][dimensions.getZ()];
         squareSize = dimensions.getY() * dimensions.getZ();
         lineSize = dimensions.getZ();
     }
@@ -80,6 +96,8 @@ public class Schematic implements GravSerializable {
         blocks = new int[copy.blocks.length][][];
         System.arraycopy(copy.blocks, 0, blocks, 0, blocks.length);
         tiles = new ConcurrentHashMap<>(copy.tiles); //Shallow copy, changes to nbt data in copied schematic will affect ones in this schematic -> may change later
+        emittedLight = new byte[copy.blocks.length][][];
+        System.arraycopy(copy.emittedLight, 0, emittedLight, 0, blocks.length);
     }
 
     public Schematic(IntVector3D origin, AsyncWorld world, CuboidRegion region) {
@@ -90,6 +108,7 @@ public class Schematic implements GravSerializable {
         this.origin = origin;
         this.dimensions = region.getMaximumPoint().subtract(region.getMinimumPoint()).add(Vector3D.ONE).asIntVector();
         this.blocks = new int[region.getHeight()][region.getWidth()][region.getLength()];
+        this.emittedLight = new byte[region.getHeight()][region.getWidth()][region.getLength()];
 
         IntVector3D min = region.getMinimumPoint().asIntVector();
 
@@ -99,7 +118,7 @@ public class Schematic implements GravSerializable {
         AtomicInteger count = new AtomicInteger();
         long time = System.currentTimeMillis();
 
-        world.syncForAllInRegion(region, (loc, block, tag) -> {
+        world.asyncForAllInRegion(region, (loc, block, tag, lighting) -> {
             IntVector3D relLoc = loc.asIntVector().subtract(min);
 
             count.getAndIncrement();
@@ -107,10 +126,13 @@ public class Schematic implements GravSerializable {
             if (block == ignoreBlock && ignoreBlock != -1)
                 block = -1;
             blocks[relLoc.getY()][relLoc.getX()][relLoc.getZ()] = block;
+            emittedLight[relLoc.getY()][relLoc.getX()][relLoc.getZ()] = (byte) (int) lighting;
 
             if (tag != null && block != -1) {
                 tiles.put(relLoc, tag);
             }
+
+            //Lighting
         }, true);
 
     }
@@ -125,6 +147,10 @@ public class Schematic implements GravSerializable {
 
     public IntVector3D getDimensions() {
         return this.dimensions;
+    }
+
+    public int getEmittedLight(int x, int y, int z) {
+        return emittedLight[y][x][z] & 0xF;
     }
 
 
@@ -187,6 +213,7 @@ public class Schematic implements GravSerializable {
         serializer.writeObject(this.origin);
         serializer.writeObject(this.blocks);
         serializer.writeObject(this.tiles);
+        serializer.writeObject(this.emittedLight);
     }
 
     @Override
@@ -228,7 +255,28 @@ public class Schematic implements GravSerializable {
                 newblocks[y - min.getY()][x - min.getX()] = newI;
             }
         }
-        return new Schematic(origin, newDimensions, newblocks);
+
+        byte[][][] newEmittedLight = new byte[newDimensions.getY()][newDimensions.getX()][newDimensions.getZ()];
+        for (int y = min.getY(); y <= max.getY(); y++) {
+            for (int x = min.getX(); x <= max.getX(); x++) {
+                byte[] newI = new byte[newDimensions.getZ()];
+                System.arraycopy(this.emittedLight[y][x], min.getZ(), newI, 0, newDimensions.getZ());
+                newEmittedLight[y - min.getY()][x - min.getX()] = newI;
+            }
+        }
+
+        Map<IntVector3D, TagCompound> newTiles = new HashMap<>();
+        tiles.forEach((p, t) -> {
+            if (p.getX() >= min.getX() && p.getX() <= max.getX()) {
+                if (p.getY() >= min.getY() && p.getY() <= max.getY()) {
+                    if (p.getZ() >= min.getZ() && p.getZ() <= max.getZ()) {
+                        newTiles.put(p, t);
+                    }
+                }
+            }
+        });
+
+        return new Schematic(origin, newDimensions, newblocks, newEmittedLight, newTiles);
     }
 
     public Schematic subSchemXZ(IntVector2D min, IntVector2D max) {
@@ -239,5 +287,16 @@ public class Schematic implements GravSerializable {
     public static class CoordinatePair {
         public int x;
         public int z;
+    }
+
+    //Util
+    private static byte[][][] castArrayToTripleByte(Object[] in) {
+        return Arrays.stream(in).map((obj) -> castArrayToDoubleByte((Object[]) obj)).toArray(byte[][][]::new);
+    }
+
+    private static byte[][] castArrayToDoubleByte(Object[] in) {
+        Stream var10000 = Arrays.stream(in);
+        byte[].class.getClass();
+        return (byte[][]) var10000.map(byte[].class::cast).toArray(byte[][]::new);
     }
 }

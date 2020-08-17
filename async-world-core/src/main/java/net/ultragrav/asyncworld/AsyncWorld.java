@@ -17,6 +17,10 @@ public abstract class AsyncWorld {
         void accept(A a, B b, C c);
     }
 
+    public interface AsyncWorldQuadConsumer<D, I, C, K> {
+        void accept(D d, I i, C c, K k);
+    }
+
     public abstract World getBukkitWorld();
 
     public abstract AsyncChunk getChunk(int cx, int cz);
@@ -37,6 +41,12 @@ public abstract class AsyncWorld {
      * Perform a synchronous action on all blocks in a region with parameters of block position, block combined id/data, and TileEntity NBT Data (null if none)
      */
     public abstract void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<Vector3D, Integer, TagCompound> action, boolean multiThread);
+
+    /**
+     * Perform an asynchronous action on all blocks in a region. NOTE: This makes use of syncFastRefreshChunksInRegion and must wait
+     * for the next tick if not called synchronously, in this case it will take at least 50ms to execute
+     */
+    public abstract void asyncForAllInRegion(CuboidRegion region, AsyncWorldQuadConsumer<Vector3D, Integer, TagCompound, Integer> action, boolean multiThread);
 
     /**
      * If anyone reading this at any point DOES NOT know what a Tile Entity is, here is an explanation <br></br>

@@ -11,6 +11,7 @@ import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.World;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -104,9 +105,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     int block = schematic.getBlockAt(x - posX, y - posY, z - posZ);
                     if (block == -1)
                         continue;
+
                     currentChunk.writeBlock(x & 0xF, y, z & 0xF, block & 0xFFF, (byte) (block >>> 12));
+                    currentChunk.setEmittedLight(x & 0xF, y, z & 0xF, schematic.getEmittedLight(x - posX, y - posY, z - posZ));
                 }
-                if(!edited.contains(currentChunk))
+                if (!edited.contains(currentChunk))
                     edited.add(currentChunk);
             }
         }
@@ -129,7 +132,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     int block = blockSupplier.get();
                     currentChunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
                 }
-                if(!edited.contains(currentChunk))
+                if (!edited.contains(currentChunk))
                     edited.add(currentChunk);
             }
         }
@@ -218,6 +221,79 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     }
                 });
                 futures.clear();
+            }
+        }
+    }
+
+    @Override
+    public void asyncForAllInRegion(CuboidRegion region, AsyncWorldQuadConsumer<Vector3D, Integer, TagCompound, Integer> action, boolean multiThread) {
+        boolean isSync = Bukkit.isPrimaryThread();
+
+        CompletableFuture<Void> f = new CompletableFuture<>();
+        Runnable refresh = () -> {
+            syncFastRefreshChunksInRegion(region, 1000);
+            f.complete(null);
+        };
+        if (isSync) {
+            refresh.run();
+        } else {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    refresh.run();
+                }
+            }.runTask(chunkQueue.getPlugin());
+        }
+        f.join();
+
+        int threads = Runtime.getRuntime().availableProcessors();
+        if (multiThread) {
+            ForkJoinPool pool = new ForkJoinPool(threads);
+            List<AsyncChunk> chunks = new ArrayList<>();
+
+            Vector3D max = region.getMaximumPoint();
+            Vector3D min = region.getMinimumPoint();
+            int minI = min.getBlockX() >> 4;
+            int minJ = min.getBlockZ() >> 4;
+            int maxI = max.getBlockX() >> 4;
+            int maxJ = max.getBlockZ() >> 4;
+
+            for (int i = minI; i <= maxI; i++)
+                for (int j = minJ; j <= maxJ; j++)
+                    chunks.add(getChunk(i, j));
+            int minBlockY = min.getBlockY();
+            int minBlockX = min.getBlockX();
+            int minBlockZ = min.getBlockZ();
+            int maxBlockY = max.getBlockY();
+            int maxBlockX = max.getBlockX();
+            int maxBlockZ = max.getBlockZ();
+
+            chunks.forEach(chunk -> pool.submit(() -> {
+                int bx = chunk.getLoc().getX() << 4;
+                int bz = chunk.getLoc().getZ() << 4;
+                for (int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
+                    for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
+                        for (int y = minBlockY; y <= maxBlockY; y++) {
+                            int block = chunk.readBlock(x, y, z);
+                            action.accept(new Vector3D(x + (chunk.getLoc().getX() << 4), y, z + (chunk.getLoc().getZ() << 4)), block, chunk.getTile(x, y, z),
+                                    chunk.getEmittedLight(x, y, z));
+                        }
+                    }
+                }
+                return null;
+            }));
+            while (!pool.isQuiescent())
+                pool.awaitQuiescence(1, TimeUnit.SECONDS);
+        } else {
+            for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
+                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
+                    AsyncChunk chunk = getChunk(x >> 4, z >> 4);
+                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
+                        int block = chunk.readBlock(x & 15, y, z & 15);
+                        action.accept(new Vector3D(x, y, z), block, chunk.getTile(x & 15, y, z & 15),
+                                chunk.getEmittedLight(x, y, z));
+                    }
+                }
             }
         }
     }

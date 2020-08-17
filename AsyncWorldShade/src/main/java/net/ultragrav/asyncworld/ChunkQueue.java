@@ -1,5 +1,6 @@
 package net.ultragrav.asyncworld;
 
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
@@ -16,6 +17,7 @@ public class ChunkQueue implements Listener {
     public static int THREADS = Runtime.getRuntime().availableProcessors();
     ExecutorService executor = Executors.newCachedThreadPool();
     boolean useGC = false;
+    @Getter
     private final Plugin plugin;
     private final List<QueuedChunk> queue = new ArrayList<>();
     private int taskId = -1;

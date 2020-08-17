@@ -170,8 +170,14 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 continue;
             ChunkSection section = sections[sectionIndex];
 
+            GUChunkSection guChunkSection = chunkSections[sectionIndex];
+
             if (section == null) {
                 section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+                if(guChunkSection != null) {
+                    System.arraycopy(guChunkSection.emittedLight, 0,
+                            section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
+                }
                 if(optimizedSections[sectionIndex] != null) {
                     try {
                         setPalette(section, optimizedSections[sectionIndex]); //Set palette
@@ -183,8 +189,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     continue;
                 }
             }
-
-            GUChunkSection guChunkSection = chunkSections[sectionIndex];
 
             short[] sectionContents = guChunkSection == null ? null : guChunkSection.contents;
 
@@ -208,6 +212,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
                 section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
                 section.getSkyLightArray().a(lx, ly, lz, 15);
+                section.getEmittedLightArray().a(lx, ly, lz, getEmittedLight(lx, ly + (sectionIndex << 4), lz));
 
                 //Remove tile entity
                 BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
@@ -269,6 +274,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 byte dat = (byte) (data[off] >>> ((i & 1) << 2) & 15);
                 this.writeBlock(sectionIndex, i, (dat << 12 | id) & 0xFFFF, false);
             }
+
+            //Emitted light
+            System.arraycopy(section.getEmittedLightArray().asBytes(), 0, chunkSections[sectionIndex].emittedLight, 0, section.getEmittedLightArray().asBytes().length);
         }
 
         //Do this after writing blocks

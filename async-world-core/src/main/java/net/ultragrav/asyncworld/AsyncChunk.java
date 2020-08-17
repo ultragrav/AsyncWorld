@@ -106,6 +106,35 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         writeBlock(y >>> 4, getCombinedLoc(x & 0xF, y & 0xF, z & 0xF), ((data & 0xF) << 12 | (id > 0 ? id & 0xFFF : id) & 0xFFFF), addTile);
     }
 
+    public synchronized void setEmittedLight(int x, int y, int z, int value) {
+        value = value & 0xF;
+        int section = y >>> 4;
+        int index = getCombinedLoc(x, y & 0xF, z);
+        int part = index & 1;
+        index >>>= 1;
+
+        GUChunkSection section1 = chunkSections[section];
+        if(section1 == null)
+            section1 = chunkSections[section] = new GUChunkSection();
+
+        int val = value << (part * 4);
+        int filter = 0xF << ((part^1) * 4);
+
+        section1.emittedLight[index] = (byte) (section1.emittedLight[index] & filter | val);
+    }
+
+    public synchronized int getEmittedLight(int x, int y, int z) {
+        int section = y >>> 4;
+        int index = getCombinedLoc(x, y & 0xF, z);
+        int part = index & 1;
+        index >>>= 1;
+
+        if(chunkSections[section] == null)
+            return 0;
+
+        return chunkSections[section].emittedLight[index] >>> (part * 4) & 0xF;
+    }
+
     public synchronized void setTileEntity(int x, int y, int z, TagCompound tag) {
         IntVector3D vec = new IntVector3D((this.getLoc().getX() << 4) + x, y, (this.getLoc().getZ() << 4) + z);
         if (tag == null) {
@@ -224,6 +253,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
     public static class GUChunkSection {
         public short[] contents = new short[4096];
+        public byte[] emittedLight = new byte[2048];
     }
 
     public static boolean[] CACHE_TILE = new boolean[4096];
