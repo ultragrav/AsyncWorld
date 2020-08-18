@@ -215,7 +215,15 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public synchronized void optimize() {
         for (int i = 0; i < chunkSections.length; i++) {
             if (chunkSections[i] != null) {
-                optimizeSection(i, chunkSections[i]);
+                boolean completelyEdited = true;
+                for (long l : chunkSections[i].edited) {
+                    if (l != -1L) {
+                        completelyEdited = false;
+                        break;
+                    }
+                }
+                if (completelyEdited)
+                    optimizeSection(i, chunkSections[i]);
             }
         }
     }

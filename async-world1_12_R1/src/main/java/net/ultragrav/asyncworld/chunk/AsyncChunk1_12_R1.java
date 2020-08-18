@@ -259,7 +259,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
 
-
         Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
         tiles.forEach((p, t) -> {
             if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)

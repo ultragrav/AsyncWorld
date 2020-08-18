@@ -97,33 +97,68 @@ public class SpigotAsyncWorld extends AsyncWorld {
         int posY = position.getY();
         int posZ = position.getZ();
 
-        int maxX = posX + schematic.getDimensions().getX();
-        int maxY = posY + schematic.getDimensions().getY();
-        int maxZ = posZ + schematic.getDimensions().getZ();
+        IntVector3D max = position.add(schematic.getDimensions()).subtract(1, 1, 1);
+        IntVector3D min = position;
+        int minX = min.getX() >> 4;
+        int minZ = min.getZ() >> 4;
+        int maxX = max.getX() >> 4;
+        int maxZ = max.getZ() >> 4;
 
-        List<AsyncChunk> edited = new ArrayList<>();
+        int absMinX = min.getX();
+        int absMinY = min.getY();
+        int absMinZ = min.getZ();
 
-        for (int x = posX; x < maxX; x++) {
-            for (int z = posZ; z < maxZ; z++) {
-                AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
-                for (int y = posY; y < maxY; y++) {
-                    int block = schematic.getBlockAt(x - posX, y - posY, z - posZ);
-                    if (block == -1)
-                        continue;
+        int absMaxX = max.getX();
+        int absMaxY = max.getY();
+        int absMaxZ = max.getZ();
 
-                    currentChunk.writeBlock(x & 0xF, y, z & 0xF, block & 0xFFF, (byte) (block >>> 12));
-                    currentChunk.setEmittedLight(x & 0xF, y, z & 0xF, schematic.getEmittedLight(x - posX, y - posY, z - posZ));
-                }
-                if (!edited.contains(currentChunk))
-                    edited.add(currentChunk);
+        int threads = schematic.getDimensions().getArea() > 200000 ? Runtime.getRuntime().availableProcessors() : 1;
+
+        ForkJoinPool pool = threads == 1 ? null : new ForkJoinPool(threads);
+
+        for (int x1 = minX; x1 <= maxX; x1++)
+            for (int z1 = minZ; z1 <= maxZ; z1++) {
+                int finalZ = z1;
+                int finalX = x1;
+                Runnable runnable = () -> {
+                    AsyncChunk chunk = getChunk(finalX, finalZ);
+                    int cxi = chunk.getLoc().getX() << 4;
+                    int czi = chunk.getLoc().getZ() << 4;
+
+                    int chunkMinX = Math.max(absMinX - cxi, 0);
+                    int chunkMinZ = Math.max(absMinZ - czi, 0);
+
+                    int chunkMaxX = Math.min(absMaxX - cxi, 15);
+                    int chunkMaxZ = Math.min(absMaxZ - czi, 15);
+
+                    try {
+                        for (int x = chunkMinX; x <= chunkMaxX; x++) {
+                            for (int y = absMinY; y <= absMaxY; y++) {
+                                for (int z = chunkMinZ; z <= chunkMaxZ; z++) {
+                                    int block = schematic.getBlockAt(cxi + x - posX, y - posY, czi + z - posZ);
+                                    if (block == -1)
+                                        continue;
+                                    chunk.writeBlock(x, y, z, block & 0xFFF, (byte) (block >>> 12 & 0xF));
+                                    chunk.setEmittedLight(x, y, z, schematic.getEmittedLight(cxi + x - posX, y - posY, czi + z - posZ));
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                };
+                if (threads != 1)
+                    pool.submit(runnable);
+                else
+                    runnable.run();
+            }
+
+        if (threads != 1) {
+            while(true) {
+                if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
             }
         }
-
-        //Optimize
-        edited.forEach(AsyncChunk::optimize);
-
-        //Set tiles
-        schematic.getTiles().forEach((p, t) -> setTile(p.getX() + posX, p.getY() + posY, p.getZ() + posZ, t));
+        schematic.getTiles().forEach((p, t) -> setTile(p.getX(), p.getY(), p.getZ(), t));
     }
 
     @Override
@@ -141,7 +176,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     edited.add(currentChunk);
             }
         }
-        edited.forEach(AsyncChunk::optimize);
     }
 
     @Override
@@ -321,11 +355,33 @@ public class SpigotAsyncWorld extends AsyncWorld {
         chunk.setIgnore(x & 15, y, z & 15);
     }
 
+
     @Override
-    public synchronized CompletableFuture<Void> flush() {
-        List<AsyncChunk> edited = chunkMap.getCachedCopy();
-        CompletableFuture<Void> future = chunkQueue.queueChunks(edited);
-        this.chunkMap.clear();
+    public CompletableFuture<Void> flush() {
+        ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+        Runnable runnable = () -> {
+            List<AsyncChunk> edited;
+            synchronized (this) {
+                edited = chunkMap.getCachedCopy();
+                this.chunkMap.clear();
+            }
+
+            //Optimize
+            edited.forEach(c -> pool.submit(c::optimize));
+            while(true) if(pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
+
+            //Queue
+            chunkQueue.queueChunks(edited).thenAccept((a) -> future.complete(null));
+        };
+
+        if(Bukkit.isPrimaryThread()) {
+            pool.submit(runnable);
+        } else {
+            runnable.run();
+        }
+
         return future;
     }
 
@@ -339,7 +395,10 @@ public class SpigotAsyncWorld extends AsyncWorld {
         if (!Bukkit.isPrimaryThread())
             return false;
         List<AsyncChunk> edited = chunkMap.getCachedCopy();
-        edited.removeIf(c -> !c.isEdited());
+        edited.removeIf(c -> {
+            c.optimize();
+            return !c.isEdited();
+        });
         List<QueuedChunk> queue = edited.stream().map((c) -> new QueuedChunk(c, null)).collect(Collectors.toList());
         chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
         this.chunkMap.clear();
