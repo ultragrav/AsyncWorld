@@ -131,15 +131,20 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     int chunkMaxX = Math.min(absMaxX - cxi, 15);
                     int chunkMaxZ = Math.min(absMaxZ - czi, 15);
 
+                    cxi -= posX;
+                    czi -= posZ;
+
                     try {
                         for (int x = chunkMinX; x <= chunkMaxX; x++) {
+                            int interX = cxi + x;
                             for (int y = absMinY; y <= absMaxY; y++) {
+                                int interY = y - posY;
                                 for (int z = chunkMinZ; z <= chunkMaxZ; z++) {
-                                    int block = schematic.getBlockAt(cxi + x - posX, y - posY, czi + z - posZ);
+                                    int block = schematic.getBlockAt(interX, interY, czi + z);
                                     if (block == -1)
                                         continue;
                                     chunk.writeBlock(x, y, z, block & 0xFFF, (byte) (block >>> 12 & 0xF));
-                                    chunk.setEmittedLight(x, y, z, schematic.getEmittedLight(cxi + x - posX, y - posY, czi + z - posZ));
+                                    chunk.setEmittedLight(x, y, z, schematic.getEmittedLight(interX, interY, czi + z));
                                 }
                             }
                         }
@@ -373,7 +378,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while(true) if(pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
 
             //Queue
-            chunkQueue.queueChunks(edited).thenAccept((a) -> future.complete(null));
+            chunkQueue.queueChunks(edited, () -> future.complete(null));
         };
 
         if(Bukkit.isPrimaryThread()) {
@@ -440,7 +445,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             for (int j = minJ; j <= maxJ; j++)
                 chunks.add(getChunk(i, j));
 
-        int threads = Runtime.getRuntime().availableProcessors();
+        int threads = chunks.size() >= Runtime.getRuntime().availableProcessors() ? Runtime.getRuntime().availableProcessors() : 1;
 
         int sectionMask = 0;
 

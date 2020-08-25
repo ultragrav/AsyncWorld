@@ -10,6 +10,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ChunkQueue implements Listener {
@@ -35,7 +36,7 @@ public class ChunkQueue implements Listener {
      *
      * @return List of AsyncChunks updated and to be removed from the queue
      */
-    protected List<CompletableFuture<Void>> update(List<QueuedChunk> chunks, ReentrantLock listLock, long time) {
+    protected List<Runnable> update(List<QueuedChunk> chunks, ReentrantLock listLock, long time) {
         if (chunks.size() == 0)
             return new ArrayList<>();
         long ms = System.currentTimeMillis();
@@ -44,7 +45,7 @@ public class ChunkQueue implements Listener {
             useGC = true;
         }
 
-        List<CompletableFuture<Void>> callbacks = new ArrayList<>();
+        List<Runnable> callbacks = new ArrayList<>();
 
         if (THREADS == 1) {
             while (System.currentTimeMillis() - ms < time) {
@@ -53,7 +54,7 @@ public class ChunkQueue implements Listener {
                 try {
                     if (chunks.size() > 0) {
                         chunk = chunks.get(0).getChunk();
-                        callbacks.add(chunks.get(0).getCallback());
+                        callbacks.addAll(chunks.get(0).getCallbacks());
                         chunks.remove(0);
                     } else {
                         break;
@@ -73,15 +74,15 @@ public class ChunkQueue implements Listener {
                 while (System.currentTimeMillis() - ms < time) {
                     Map<AsyncChunk, Integer> masks = new ConcurrentHashMap<>();
 
-                    //Lock it so that while we schedule the tasks, the list isn't changed
                     List<AsyncChunk> todo = new ArrayList<>();
 
                     //Get chunks
+                    //Lock it so that while we schedule the tasks, the list isn't changed
                     listLock.lock();
                     try {
                         for (int i = 0; i < THREADS && chunks.size() > 0 && System.currentTimeMillis() - ms < time; i++) { // Spawn THREAD threads
                             AsyncChunk chunk = chunks.get(0).getChunk();
-                            callbacks.add(chunks.get(0).getCallback());
+                            callbacks.addAll(chunks.get(0).getCallbacks());
                             chunks.remove(0);
                             todo.add(chunk);
                         }
@@ -127,7 +128,7 @@ public class ChunkQueue implements Listener {
             //That way if a chunk is scheduled it could be updated on the same tick instead of 1 tick later
 
             //GC
-            if (Runtime.getRuntime().freeMemory() / (double) Runtime.getRuntime().totalMemory() > 0.9
+            if (Runtime.getRuntime().freeMemory() / (double) Runtime.getRuntime().totalMemory() > 0.88D
                     || System.currentTimeMillis() - lastGC > 20000 || useGC) {
                 System.gc();
                 useGC = false;
@@ -158,11 +159,10 @@ public class ChunkQueue implements Listener {
 
     public synchronized void startWork() {
         taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            List<CompletableFuture<Void>> callbacks = update(queue, listLock, WORK_TIME_PER_TICK_MS);
-            callbacks.forEach(c -> {
+            this.update(queue, listLock, WORK_TIME_PER_TICK_MS).forEach(c -> {
                 if (c == null)
                     return;
-                c.complete(null);
+                c.run();
             });
         }, 1, 1);
     }
@@ -175,18 +175,22 @@ public class ChunkQueue implements Listener {
         }
     }
 
-    public CompletableFuture<Void> queueChunk(AsyncChunk chunk) {
-        return queueChunk(chunk, new CompletableFuture<>());
+    public boolean queueChunk(AsyncChunk chunk) {
+        return queueChunk(chunk, null);
     }
 
-    public CompletableFuture<Void> queueChunk(AsyncChunk chunk, CompletableFuture<Void> future) {
-        if (chunk.getParent() == null || chunk.getParent().getBukkitWorld() == null) {
-            future.complete(null);
-            return future;
-        }
+    /**
+     * Queues a chunk for flushing
+     * @param chunk The chunk to queue
+     * @param callback callback to run when chunk has been flushed
+     * @return true if successfully queued, false otherwise
+     */
+    public boolean queueChunk(AsyncChunk chunk, Runnable callback) {
+        if (chunk.getParent() == null || chunk.getParent().getBukkitWorld() == null)
+            return false;
         listLock.lock();
         try {
-            QueuedChunk queuedChunk = new QueuedChunk(chunk, future);
+            QueuedChunk queuedChunk = new QueuedChunk(chunk, Collections.singletonList(callback));
 
             //Check if we should merge
             for (QueuedChunk queuedChunk1 : queue) {
@@ -196,14 +200,14 @@ public class ChunkQueue implements Listener {
                     queuedChunk1.getChunk().merge(chunk);
 
                     //Merge callbacks
-                    queuedChunk1.setCallback(queuedChunk1.getCallback().thenAccept(future::complete));
+                    queuedChunk1.addCallback(callback);
 
                     //Start work
                     if (!this.isWorking()) {
                         this.setWorking(true);
                         this.startWork();
                     }
-                    return future;
+                    return true;
                 }
             }
 
@@ -215,23 +219,33 @@ public class ChunkQueue implements Listener {
                 this.setWorking(true);
                 this.startWork();
             }
+        } catch(Exception e) {
+            e.printStackTrace();
+            return false;
         } finally {
             listLock.unlock();
         }
-        return future;
+        return true;
     }
 
-    public synchronized CompletableFuture<Void> queueChunks(List<AsyncChunk> chunks) {
+    public synchronized void queueChunks(List<AsyncChunk> chunks, Runnable callback) {
+        AtomicInteger completed = new AtomicInteger();
         CompletableFuture<Void> future = new CompletableFuture<>();
+        final int needed = chunks.size();
         listLock.lock();
         try {
             for (AsyncChunk chunk : chunks) {
-                this.queueChunk(chunk, future);
+                if(!this.queueChunk(chunk, () -> {
+                    if(completed.incrementAndGet() == needed) {
+                        callback.run();
+                    }
+                })) {
+                    completed.incrementAndGet(); //increment completed if failed to queue
+                }
             }
         } finally {
             listLock.unlock();
         }
-        return future;
     }
 
     private synchronized boolean isWorking() {

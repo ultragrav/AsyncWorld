@@ -2,21 +2,22 @@ package net.ultragrav.asyncworld;
 
 import lombok.AllArgsConstructor;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @AllArgsConstructor
 public class QueuedChunk {
     private final AsyncChunk chunk;
-    private CompletableFuture<Void> callback;
+    private List<Runnable> callbacks;
 
     public synchronized AsyncChunk getChunk() {
         return this.chunk;
     }
-    public synchronized CompletableFuture<Void> getCallback() {
-        return this.callback;
+    public synchronized List<Runnable> getCallbacks() {
+        return this.callbacks;
     }
 
-    public synchronized void setCallback(CompletableFuture<Void> future) {
-        this.callback = future;
+    public synchronized void addCallback(Runnable callback) {
+        this.callbacks.add(callback);
     }
 }
