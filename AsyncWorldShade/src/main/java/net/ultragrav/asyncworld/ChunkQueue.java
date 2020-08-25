@@ -190,7 +190,7 @@ public class ChunkQueue implements Listener {
             return false;
         listLock.lock();
         try {
-            QueuedChunk queuedChunk = new QueuedChunk(chunk, Collections.singletonList(callback));
+            QueuedChunk queuedChunk = new QueuedChunk(chunk, callback);
 
             //Check if we should merge
             for (QueuedChunk queuedChunk1 : queue) {

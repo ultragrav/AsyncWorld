@@ -404,7 +404,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             c.optimize();
             return !c.isEdited();
         });
-        List<QueuedChunk> queue = edited.stream().map((c) -> new QueuedChunk(c, null)).collect(Collectors.toList());
+        List<QueuedChunk> queue = edited.stream().map(QueuedChunk::new).collect(Collectors.toList());
         chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
         this.chunkMap.clear();
         return edited.isEmpty();

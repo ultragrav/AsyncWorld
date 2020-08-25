@@ -224,8 +224,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 }
 
                 section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
+                section.getSkyLightArray().a(lx, ly, lz, 15);
                 if(!completelyEdited) {
-                    section.getSkyLightArray().a(lx, ly, lz, 15);
                     section.getEmittedLightArray().a(lx, ly, lz, getEmittedLight(lx, ly + (sectionIndex << 4), lz));
                 }
 
