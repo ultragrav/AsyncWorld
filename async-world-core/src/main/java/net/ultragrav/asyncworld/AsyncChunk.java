@@ -179,8 +179,10 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
                     }
                     System.arraycopy(section.emittedLight, 0, parentSection.emittedLight, 0, section.emittedLight.length);
                 }
+                parent.chunkSections[i].edited = new long[64];
             }
         }
+        parent.editedSections |= this.editedSections;
     }
 
     /**
