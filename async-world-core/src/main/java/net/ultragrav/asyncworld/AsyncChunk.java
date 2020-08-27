@@ -100,6 +100,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public synchronized void writeBlock(int x, int y, int z, int id, byte data, boolean addTile) {
         if (id < 0 && id != -1)
             throw new IllegalArgumentException("ID cannot be less than 0 (air)");
+        if(x > 15 || z > 15)
+            throw new IllegalArgumentException("Cannot set block at chunk coordinates: " + x + " " + y + " " + z + " (out of bounds)");
         if (y < 0)
             return;
         if (y > 255)
@@ -114,6 +116,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     public synchronized void setEmittedLight(int x, int y, int z, int value) {
+        if(y > 255)
+            return;
         value = value & 0xF;
         int section = y >>> 4;
         int index = getCombinedLoc(x, y & 0xF, z);

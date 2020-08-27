@@ -122,8 +122,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 int finalX = x1;
                 Runnable runnable = () -> {
                     AsyncChunk chunk = getChunk(finalX, finalZ);
-                    int cxi = chunk.getLoc().getX() << 4;
-                    int czi = chunk.getLoc().getZ() << 4;
+                    int cxi = finalX << 4; //Chunk origin coordinates
+                    int czi = finalZ << 4; //Chunk origin coordinates
 
                     int chunkMinX = Math.max(absMinX - cxi, 0);
                     int chunkMinZ = Math.max(absMinZ - czi, 0);
