@@ -291,16 +291,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 this.writeBlock(sectionIndex, i, (dat << 12 | id) & 0xFFFF, false);
             }
 
-//            //section.getBlocks().exportData(rawIds, rawData);
-//            //data = rawData.asBytes();
-//            for (int i = 0, rawIdsLength = rawIds.length; i < rawIdsLength; i++) {
-//                short id = (short) (rawIds[i] & 0xFF);
-//                if (id == 0) id = -1;
-//                int off = i >>> 1;
-//                byte dat = (byte) (data[off] >>> ((i & 1) << 2) & 15);
-//                this.writeBlock(sectionIndex, i, (dat << 12 | id) & 0xFFFF, false);
-//            }
-
             //Emitted light
             System.arraycopy(section.getEmittedLightArray().asBytes(), 0, chunkSections[sectionIndex].emittedLight, 0, section.getEmittedLightArray().asBytes().length);
         }

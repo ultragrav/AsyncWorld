@@ -28,7 +28,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     @Getter
     private ChunkLocation loc;
     @Getter(AccessLevel.PROTECTED)
-    private int editedSections;
+    private volatile int editedSections;
     @Getter
     private AsyncWorld parent;
 

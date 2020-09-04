@@ -23,13 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Max dimensions: 256 x 2,100,000,000 x 2,100,000,000
- * However, you would almost definitely run out of memory before even getting close to something that size
- */
 public class Schematic implements GravSerializable {
 
-    private static final int FORMAT_VERSION = 3;
+    private static final int FORMAT_VERSION = 4;
 
     private final IntVector3D origin;
     private final IntVector3D dimensions;
@@ -49,8 +45,13 @@ public class Schematic implements GravSerializable {
         } catch (Exception ignored) {
             serializer.reset();
         }
-        this.dimensions = serializer.readObject();
-        this.origin = serializer.readObject();
+        if(formatVersion > 3) {
+            this.dimensions = new IntVector3D(serializer.readInt(), serializer.readInt(), serializer.readInt());
+            this.origin = new IntVector3D(serializer.readInt(), serializer.readInt(), serializer.readInt());
+        } else {
+            this.dimensions = serializer.readObject();
+            this.origin = serializer.readObject();
+        }
         blocks = ArrayUtils.castArrayToTripleInt(serializer.readObject());
         if (formatVersion > 0)
             tiles = new ConcurrentHashMap<>(serializer.readObject());
@@ -209,8 +210,15 @@ public class Schematic implements GravSerializable {
     @Override
     public void serialize(GravSerializer serializer) {
         serializer.writeObject(FORMAT_VERSION);
-        serializer.writeObject(this.dimensions);
-        serializer.writeObject(this.origin);
+
+        serializer.writeInt(this.dimensions.getX());
+        serializer.writeInt(this.dimensions.getY());
+        serializer.writeInt(this.dimensions.getZ());
+
+        serializer.writeInt(this.origin.getX());
+        serializer.writeInt(this.origin.getY());
+        serializer.writeInt(this.origin.getZ());
+
         serializer.writeObject(this.blocks);
         serializer.writeObject(this.tiles);
         serializer.writeObject(this.emittedLight);
