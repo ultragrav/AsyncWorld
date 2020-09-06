@@ -192,7 +192,10 @@ public class Schematic implements GravSerializable {
             for (int x = 0; x < dimensions.getX(); x++) {
                 for (int z = 0; z < dimensions.getZ(); z++) {
                     CoordinatePair pair = converter.convert(x, z, xSize, zSize);
-                    newArr[i][pair.x][pair.z] = BlockConverter.rotate(blocks[i][x][z], rotation);
+                    int b = blocks[i][x][z];
+                    if(b != -1)
+                        b = BlockConverter.rotate(blocks[i][x][z], rotation);
+                    newArr[i][pair.x][pair.z] = b;
                 }
             }
         }
