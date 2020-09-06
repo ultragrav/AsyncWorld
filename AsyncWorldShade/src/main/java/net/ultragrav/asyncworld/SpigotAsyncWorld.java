@@ -163,7 +163,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
             }
         }
-        schematic.getTiles().forEach((p, t) -> setTile(p.getX(), p.getY(), p.getZ(), t));
+        IntVector3D finalPosition = position;
+        schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
     }
 
     @Override
