@@ -1,6 +1,5 @@
 package net.ultragrav.asyncworld.schematics;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 
 public class BlockConverter {
@@ -20,16 +19,16 @@ public class BlockConverter {
             if (data == 0 || data == 1)
                 data = rotateData2((byte) data);
             else if (data > 5)
-                data = ((data-6) + 3 & 3) + 6;
+                data = ((data - 6) + 3 & 3) + 6;
             else {
-                if(data == 4)
+                if (data == 4)
                     data = 5;
-                else if(data == 5)
+                else if (data == 5)
                     data = 4;
                 data = rotateData4((byte) (data - 2)) + 2;
-                if(data == 4)
+                if (data == 4)
                     data = 5;
-                else if(data == 5)
+                else if (data == 5)
                     data = 4;
             }
         } else if (mat.name().endsWith("FENCE_GATE")) {
@@ -46,7 +45,7 @@ public class BlockConverter {
             if (data != 1)
                 data = rotateData4((byte) (data - 1)) + 1;
         } else if (mat.name().contains("LOG")) {
-            if(data < 11 && data > 3) {
+            if (data < 11 && data > 3) {
                 int l = data - 4; // 4
                 int l1 = l >>> 2; // 1
                 l1 += 1; // 10

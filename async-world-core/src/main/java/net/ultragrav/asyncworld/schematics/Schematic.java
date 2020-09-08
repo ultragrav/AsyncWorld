@@ -8,7 +8,6 @@ import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
 import net.ultragrav.serializer.compressors.ZstdCompressor;
 import net.ultragrav.utils.*;
-import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,7 +20,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Schematic implements GravSerializable {
 
@@ -31,10 +29,10 @@ public class Schematic implements GravSerializable {
     private final IntVector3D dimensions;
     private final int[][][] blocks;
     private final byte[][][] emittedLight;
-    @Getter
-    private Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();
     private final int squareSize;
     private final int lineSize;
+    @Getter
+    private Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();
 
     public Schematic(GravSerializer serializer) {
 
@@ -45,7 +43,7 @@ public class Schematic implements GravSerializable {
         } catch (Exception ignored) {
             serializer.reset();
         }
-        if(formatVersion > 3) {
+        if (formatVersion > 3) {
             this.dimensions = new IntVector3D(serializer.readInt(), serializer.readInt(), serializer.readInt());
             this.origin = new IntVector3D(serializer.readInt(), serializer.readInt(), serializer.readInt());
         } else {
@@ -67,6 +65,14 @@ public class Schematic implements GravSerializable {
 
     public Schematic(File file) throws IOException {
         this(new GravSerializer(new FileInputStream(file), ZstdCompressor.instance));
+    }
+
+    public Schematic(IntVector3D origin, IntVector3D dimensions) {
+        this(origin, dimensions,
+                new int[dimensions.getY()][dimensions.getX()][dimensions.getZ()],
+                new byte[dimensions.getY()][dimensions.getX()][dimensions.getZ()],
+                new HashMap<>()
+        );
     }
 
     public Schematic(IntVector3D origin, IntVector3D dimensions, int[][][] blocks, byte[][][] emittedLight, Map<IntVector3D, TagCompound> tiles) {
@@ -124,7 +130,7 @@ public class Schematic implements GravSerializable {
 
             count.getAndIncrement();
 
-            if (block == ignoreBlock && ignoreBlock != -1)
+            if (block == ignoreBlock)
                 block = -1;
             blocks[relLoc.getY()][relLoc.getX()][relLoc.getZ()] = block;
             emittedLight[relLoc.getY()][relLoc.getX()][relLoc.getZ()] = (byte) (int) lighting;
@@ -136,6 +142,44 @@ public class Schematic implements GravSerializable {
             //Lighting
         }, true);
 
+    }
+
+    //Util
+    private static byte[][][] castArrayToTripleByte(Object[] in) {
+        return Arrays.stream(in).map((obj) -> castArrayToDoubleByte((Object[]) obj)).toArray(byte[][][]::new);
+    }
+
+    private static byte[][] castArrayToDoubleByte(Object[] in) {
+        return Arrays.stream(in).map(byte[].class::cast).toArray(byte[][]::new);
+    }
+
+    public void paste(IntVector3D pos, Schematic schem) {
+        for (int i = 0; i < schem.getDimensions().getY(); i++) {
+            for (int j = 0; j < schem.getDimensions().getX(); j++) {
+                for (int k = 0; k < schem.getDimensions().getZ(); k++) {
+                    if (schem.blocks[i][j][k] == -1) {
+                        continue;
+                    }
+                    blocks[pos.getY() + i][pos.getX() + j][pos.getZ() + k] = schem.blocks[i][j][k];
+                    emittedLight[pos.getY() + i][pos.getX() + j][pos.getZ() + k] = schem.emittedLight[i][j][k];
+                }
+            }
+        }
+    }
+
+    public Schematic stack(int x, int y, int z) {
+        x++;
+        y++;
+        z++;
+        Schematic ret = new Schematic(origin, dimensions.multiply(x, y, z));
+        for (int i = 0; i < x; i++) {
+            for (int j = 0; j < y; j++) {
+                for (int k = 0; k < z; k++) {
+                    ret.paste(dimensions.multiply(i, j, k), this);
+                }
+            }
+        }
+        return ret;
     }
 
     public int getBlockAt(IntVector3D relLoc) {
@@ -153,7 +197,6 @@ public class Schematic implements GravSerializable {
     public int getEmittedLight(int x, int y, int z) {
         return emittedLight[y][x][z] & 0xF;
     }
-
 
     public IntVector3D getOrigin() {
         return this.origin;
@@ -193,7 +236,7 @@ public class Schematic implements GravSerializable {
                 for (int z = 0; z < dimensions.getZ(); z++) {
                     CoordinatePair pair = converter.convert(x, z, xSize, zSize);
                     int b = blocks[i][x][z];
-                    if(b != -1)
+                    if (b != -1)
                         b = BlockConverter.rotate(blocks[i][x][z], rotation);
                     newArr[i][pair.x][pair.z] = b;
                 }
@@ -239,23 +282,6 @@ public class Schematic implements GravSerializable {
                 '}';
     }
 
-    public interface CoordinateConverter {
-        static CoordinateConverter getConverter(int rotation) {
-            switch (rotation) {
-                case 1:
-                    return (x, z, xSize, zSize) -> new CoordinatePair(z, xSize - x - 1);
-                case 2:
-                    return (x, z, xSize, zSize) -> new CoordinatePair(xSize - x - 1, zSize - z - 1);
-                case 3:
-                    return (x, z, xSize, zSize) -> new CoordinatePair(zSize - z - 1, x);
-                default:
-                    throw new IllegalArgumentException("How did we get here??");
-            }
-        }
-
-        CoordinatePair convert(int x, int z, int xSize, int ySize);
-    }
-
     public Schematic subSchem(IntVector3D min, IntVector3D max) {
         IntVector3D newDimensions = max.subtract(min).add(IntVector3D.ONE);
         int[][][] newblocks = new int[newDimensions.getY()][newDimensions.getX()][newDimensions.getZ()];
@@ -294,20 +320,26 @@ public class Schematic implements GravSerializable {
         return subSchem(IntVector3D.ZERO.addXZ(min), IntVector3D.ZERO.setY(dimensions.getY() - 1).addXZ(max));
     }
 
+    public interface CoordinateConverter {
+        static CoordinateConverter getConverter(int rotation) {
+            switch (rotation) {
+                case 1:
+                    return (x, z, xSize, zSize) -> new CoordinatePair(z, xSize - x - 1);
+                case 2:
+                    return (x, z, xSize, zSize) -> new CoordinatePair(xSize - x - 1, zSize - z - 1);
+                case 3:
+                    return (x, z, xSize, zSize) -> new CoordinatePair(zSize - z - 1, x);
+                default:
+                    throw new IllegalArgumentException("How did we get here??");
+            }
+        }
+
+        CoordinatePair convert(int x, int z, int xSize, int ySize);
+    }
+
     @AllArgsConstructor
     public static class CoordinatePair {
         public int x;
         public int z;
-    }
-
-    //Util
-    private static byte[][][] castArrayToTripleByte(Object[] in) {
-        return Arrays.stream(in).map((obj) -> castArrayToDoubleByte((Object[]) obj)).toArray(byte[][][]::new);
-    }
-
-    private static byte[][] castArrayToDoubleByte(Object[] in) {
-        Stream var10000 = Arrays.stream(in);
-        byte[].class.getClass();
-        return (byte[][]) var10000.map(byte[].class::cast).toArray(byte[][]::new);
     }
 }
