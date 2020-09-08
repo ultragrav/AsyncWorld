@@ -333,7 +333,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
     }
 
-    private Tag fromNMSTag(NBTBase base) {
+    public static Tag fromNMSTag(NBTBase base) {
         if (base instanceof NBTTagCompound) {
             TagCompound compound = new TagCompound();
             for (String key : ((NBTTagCompound) base).c()) {
@@ -378,11 +378,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
 
-    private NBTTagCompound fromGenericCompound(TagCompound compound) {
+    public static NBTTagCompound fromGenericCompound(TagCompound compound) {
         return (NBTTagCompound) fromGenericTag(compound);
     }
 
-    private NBTBase fromGenericTag(Tag tag) {
+    public static NBTBase fromGenericTag(Tag tag) {
         if (tag instanceof TagCompound) {
             NBTTagCompound compound = new NBTTagCompound();
             Map<String, Tag> tags = ((TagCompound) tag).getData();
