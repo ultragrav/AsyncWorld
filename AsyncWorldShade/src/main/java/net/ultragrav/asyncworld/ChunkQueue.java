@@ -230,7 +230,6 @@ public class ChunkQueue implements Listener {
 
     public synchronized void queueChunks(List<AsyncChunk> chunks, Runnable callback) {
         AtomicInteger completed = new AtomicInteger();
-        CompletableFuture<Void> future = new CompletableFuture<>();
         final int needed = chunks.size();
         listLock.lock();
         try {

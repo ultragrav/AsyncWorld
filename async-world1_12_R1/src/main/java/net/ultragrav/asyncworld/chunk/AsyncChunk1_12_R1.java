@@ -164,6 +164,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         int bx = loc.getX() << 4;
         int bz = loc.getZ() << 4;
 
+        boolean noTiles = nmsChunk.getTileEntities().isEmpty();
+
         ChunkSection[] sections = nmsChunk.getSections();
         for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
             if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
@@ -193,12 +195,16 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
                 if (optimizedSections[sectionIndex] != null) {
                     try {
-                        setPalette(section, optimizedSections[sectionIndex]); //Set palette
-                        setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
+                        if(airCount[sectionIndex] == 4096) {
+                            sections[sectionIndex] = null;
+                        } else {
+                            setPalette(section, optimizedSections[sectionIndex]); //Set palette
+                            setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
+                            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 15);
+                        }
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
-                    Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 15);
                     continue;
                 }
             }
@@ -224,21 +230,29 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 }
 
                 section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
-                section.getSkyLightArray().a(lx, ly, lz, 15);
                 if(!completelyEdited) {
-                    section.getEmittedLightArray().a(lx, ly, lz, getEmittedLight(lx, ly + (sectionIndex << 4), lz));
+                    int index = i;
+                    int part = index & 1;
+                    index >>>= 1;
+                    int emittedLight = (guChunkSection.emittedLight[index] >>> (part * 4) & 0xF);
+                    section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
                 }
 
                 //Remove tile entity
-                BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
-                TileEntity te = nmsChunk.getTileEntities().get(position);
-                if (te != null)
-                    tilesToRemove.put(position, te);
+                if(!noTiles) {
+                    BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
+                    TileEntity te = nmsChunk.getTileEntities().get(position);
+                    if (te != null)
+                        tilesToRemove.put(position, te);
+                }
             }
-            if (air == 65536) {
+            if (air == 4096) {
                 sections[sectionIndex] = null;
             }
+
+            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 15);
         }
+
 
         //Biomes
         byte[] chunkBiomes = nmsChunk.getBiomeIndex();
@@ -246,6 +260,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             if (biomes[i] != -1)
                 chunkBiomes[i] = biomes[i];
         Arrays.fill(biomes, (byte) -1);
+
 
         //heightmap/lighting
         nmsChunk.initLighting();
@@ -301,7 +316,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 return;
             this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(t.save(new NBTTagCompound())));
         });
-
 
     }
 
