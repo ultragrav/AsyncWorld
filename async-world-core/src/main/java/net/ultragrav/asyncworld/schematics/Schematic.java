@@ -110,8 +110,16 @@ public class Schematic implements GravSerializable {
         }
         System.arraycopy(copy.blocks, 0, blocks, 0, blocks.length);
         tiles = new ConcurrentHashMap<>(copy.tiles); //Shallow copy, changes to nbt data in copied schematic will affect ones in this schematic -> may change later
+
+
         emittedLight = new byte[copy.blocks.length][][];
-        System.arraycopy(copy.emittedLight, 0, emittedLight, 0, blocks.length);
+        for(int i = 0; i < copy.emittedLight.length; i++) {
+            emittedLight[i] = new byte[copy.emittedLight[i].length][];
+            for(int i2 = 0; i2 < copy.emittedLight[i].length; i2++) {
+                emittedLight[i][i2] = new byte[copy.emittedLight[i][i2].length];
+                System.arraycopy(copy.emittedLight[i][i2], 0, emittedLight[i][i2], 0, emittedLight[i][i2].length);
+            }
+        }
     }
 
     public Schematic(IntVector3D origin, AsyncWorld world, CuboidRegion region) {
