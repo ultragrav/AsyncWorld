@@ -101,6 +101,13 @@ public class Schematic implements GravSerializable {
         this.squareSize = copy.squareSize;
         this.lineSize = copy.lineSize;
         blocks = new int[copy.blocks.length][][];
+        for(int i = 0; i < copy.blocks.length; i++) {
+            blocks[i] = new int[copy.blocks[i].length][];
+            for(int i2 = 0; i2 < copy.blocks[i].length; i2++) {
+                blocks[i][i2] = new int[copy.blocks[i][i2].length];
+                System.arraycopy(copy.blocks[i][i2], 0, blocks[i][i2], 0, blocks[i][i2].length);
+            }
+        }
         System.arraycopy(copy.blocks, 0, blocks, 0, blocks.length);
         tiles = new ConcurrentHashMap<>(copy.tiles); //Shallow copy, changes to nbt data in copied schematic will affect ones in this schematic -> may change later
         emittedLight = new byte[copy.blocks.length][][];
