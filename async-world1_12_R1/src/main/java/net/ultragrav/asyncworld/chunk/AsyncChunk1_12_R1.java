@@ -236,6 +236,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     index >>>= 1;
                     int emittedLight = (guChunkSection.emittedLight[index] >>> (part * 4) & 0xF);
                     section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
+                    section.getSkyLightArray().a(lx, ly, lz, 0xF);
                 }
 
                 //Remove tile entity
@@ -249,8 +250,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             if (air == 4096) {
                 sections[sectionIndex] = null;
             }
-
-            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
         }
 
 

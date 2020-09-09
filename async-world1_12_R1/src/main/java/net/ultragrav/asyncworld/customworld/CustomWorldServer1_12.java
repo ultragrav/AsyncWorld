@@ -22,8 +22,6 @@ public class CustomWorldServer1_12 extends WorldServer {
 
         worldData.setDifficulty(EnumDifficulty.NORMAL);
         worldData.setSpawn(new BlockPosition(0, 61, 0));
-
-        this.pvpMode = false;
     }
 
     @Override
