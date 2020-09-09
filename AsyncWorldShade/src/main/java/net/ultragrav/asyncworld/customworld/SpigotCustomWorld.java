@@ -4,6 +4,7 @@ import net.ultragrav.asyncworld.AsyncWorld;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -75,8 +76,20 @@ public class SpigotCustomWorld extends CustomWorld {
         asyncWorld.getChunkMap().getCachedCopy().forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
 
-        //Add to world list
-        worldHandler.addToWorldList();
+        //Add to world list (Must be sync)
+        if(!Bukkit.isPrimaryThread()) {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    worldHandler.addToWorldList();
+                    future.complete(null);
+                }
+            }.runTask(plugin);
+            future.join();
+        } else {
+            worldHandler.addToWorldList();
+        }
     }
 
     public Future<Void> createAsync(Consumer<CustomWorldAsyncWorld> generator) {

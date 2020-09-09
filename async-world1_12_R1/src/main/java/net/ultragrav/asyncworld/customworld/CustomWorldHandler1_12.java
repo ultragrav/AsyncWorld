@@ -91,6 +91,8 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
         }
     }
 
+    private final ReentrantLock addLock = new ReentrantLock(true);
+
     @Override
     public void addToWorldList() {
         if (world == null) {
@@ -99,7 +101,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
 
         MinecraftServer mcServer = MinecraftServer.getServer();
 
-        safetyLock.lock();
+        addLock.lock(); // Not necessary but just makes me feel better
         try {
             if (mcServer.server.getWorld(world.getWorld().getUID()) == null) {
                 mcServer.server.addWorld(world.getWorld());
@@ -108,18 +110,13 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                 mcServer.worlds.add(world);
             }
         } finally {
-            safetyLock.unlock();
+            addLock.unlock();
         }
 
         //NOTE: It would seem calling these is necessary for certain spigot functions to work in this world
         //The one I encountered was falling blocks not caring for setDropItem(false)
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                Bukkit.getPluginManager().callEvent(new WorldInitEvent(world.getWorld()));
-                Bukkit.getPluginManager().callEvent(new WorldLoadEvent(world.getWorld()));
-            }
-        }.runTask(customWorld.getPlugin());
+        Bukkit.getPluginManager().callEvent(new WorldInitEvent(world.getWorld()));
+        Bukkit.getPluginManager().callEvent(new WorldLoadEvent(world.getWorld()));
     }
 
     @Override
