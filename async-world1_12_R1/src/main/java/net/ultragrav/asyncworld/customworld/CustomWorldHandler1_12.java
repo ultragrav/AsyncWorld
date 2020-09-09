@@ -53,7 +53,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
         try {
             craftBukkitWorldMap.setAccessible(true);
             Map<Object, Object> current = (Map<Object, Object>) craftBukkitWorldMap.get(Bukkit.getServer());
-            if (!current.getClass().getName().contains("ConcurrentMap")) {
+            if (!current.getClass().getName().contains("Synchronized")) {
                 CompletableFuture<Void> future = new CompletableFuture<>();
                 new BukkitRunnable() { public void run() {
                     try {

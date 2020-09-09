@@ -23,16 +23,16 @@ import java.util.function.Supplier;
  * Async safe world
  * Also works as a sort-of edit queue
  */
-public class CustomWorldAsyncWorld extends AsyncWorld {
+public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
 
     private static ExecutorService executor = Executors.newCachedThreadPool();
 
     @Getter
-    private CustomWorldChunkMap chunkMap = new CustomWorldChunkMap(this);
+    private SpigotCustomWorldChunkMap chunkMap = new SpigotCustomWorldChunkMap(this);
 
     //private BunkerWorldServer worldServer;
 
-    public CustomWorldAsyncWorld() {
+    public SpigotCustomWorldAsyncWorld() {
     }
 
     @Override

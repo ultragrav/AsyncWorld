@@ -200,7 +200,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         } else {
                             setPalette(section, optimizedSections[sectionIndex]); //Set palette
                             setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
-                            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 15);
+                            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
                         }
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
@@ -250,7 +250,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 sections[sectionIndex] = null;
             }
 
-            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 15);
+            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
         }
 
 

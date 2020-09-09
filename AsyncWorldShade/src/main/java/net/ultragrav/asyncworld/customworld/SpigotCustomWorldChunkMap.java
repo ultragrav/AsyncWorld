@@ -1,18 +1,16 @@
 package net.ultragrav.asyncworld.customworld;
 
-import net.ultragrav.asyncworld.AsyncWorld;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CustomWorldChunkMap {
+public class SpigotCustomWorldChunkMap {
     private Map<Long, CustomWorldAsyncChunk<?>> chunks = new HashMap<>();
 
-    private final CustomWorldAsyncWorld parent;
+    private final SpigotCustomWorldAsyncWorld parent;
 
-    public CustomWorldChunkMap(CustomWorldAsyncWorld parent) {
+    public SpigotCustomWorldChunkMap(SpigotCustomWorldAsyncWorld parent) {
         this.parent = parent;
     }
 

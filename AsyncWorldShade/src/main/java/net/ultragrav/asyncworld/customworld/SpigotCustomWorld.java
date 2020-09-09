@@ -1,6 +1,5 @@
 package net.ultragrav.asyncworld.customworld;
 
-import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -8,7 +7,6 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 public class SpigotCustomWorld extends CustomWorld {
@@ -36,7 +34,7 @@ public class SpigotCustomWorld extends CustomWorld {
         return sV;
     }
 
-    private final CustomWorldAsyncWorld asyncWorld = new CustomWorldAsyncWorld();
+    private final SpigotCustomWorldAsyncWorld asyncWorld = new SpigotCustomWorldAsyncWorld();
 
     public ExecutorService service = Executors.newSingleThreadExecutor();
 
@@ -57,7 +55,8 @@ public class SpigotCustomWorld extends CustomWorld {
         this.sizeChunksZ = sizeChunksZ;
     }
 
-    public void create(Consumer<AsyncWorld> generator) {
+    @Override
+    public void create(Consumer<CustomWorldAsyncWorld> generator) {
 
         if (!startedCreation.compareAndSet(false, true))
             throw new RuntimeException("World already created!");
@@ -80,7 +79,7 @@ public class SpigotCustomWorld extends CustomWorld {
         worldHandler.addToWorldList();
     }
 
-    public Future<Void> createAsync(Consumer<AsyncWorld> generator) {
+    public Future<Void> createAsync(Consumer<CustomWorldAsyncWorld> generator) {
         return service.submit(() -> {
             create(generator);
             return null;
