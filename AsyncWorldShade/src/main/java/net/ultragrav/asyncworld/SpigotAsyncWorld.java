@@ -479,5 +479,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
         }
+        System.out.println("Took " + (System.currentTimeMillis() - ms) + "ms to refresh chunks : " + chunks.size());
     }
 }
