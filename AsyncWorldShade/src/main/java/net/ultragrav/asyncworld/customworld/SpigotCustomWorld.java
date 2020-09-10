@@ -90,6 +90,7 @@ public class SpigotCustomWorld extends CustomWorld {
         asyncWorld.getChunkMap().getCachedCopy().forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
 
+
         //Add to world list (Must be sync)
         if(!Bukkit.isPrimaryThread()) {
             CompletableFuture<Void> future = new CompletableFuture<>();

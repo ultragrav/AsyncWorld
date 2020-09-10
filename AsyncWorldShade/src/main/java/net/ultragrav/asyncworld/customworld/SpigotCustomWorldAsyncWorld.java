@@ -133,8 +133,8 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
             }
 
         if (threads != 1) {
-            if (!pool.awaitQuiescence(30, TimeUnit.SECONDS)) {
-                throw new RuntimeException("Waited too long to paste schematic!");
+            while (!pool.isQuiescent()) {
+                pool.awaitQuiescence(1, TimeUnit.SECONDS);
             }
         }
         IntVector3D finalPosition = position;
