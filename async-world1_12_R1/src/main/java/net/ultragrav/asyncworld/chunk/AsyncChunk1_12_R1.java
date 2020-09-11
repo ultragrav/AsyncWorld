@@ -166,6 +166,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
         boolean noTiles = nmsChunk.getTileEntities().isEmpty();
 
+        int remMask = 0;
+
         ChunkSection[] sections = nmsChunk.getSections();
         for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
             if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
@@ -205,6 +207,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
+                    remMask |= 1 << sectionIndex;
                     continue;
                 }
             }
@@ -260,12 +263,47 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 chunkBiomes[i] = biomes[i];
         Arrays.fill(biomes, (byte) -1);
 
+        //Rem more tiles
+        if(remMask != 0) {
+            int finalRemMask = remMask;
+            nmsChunk.getTileEntities().forEach((p, t) -> {
+                if((finalRemMask & (1 << (p.getY() >> 4))) != 0) {
+                    tilesToRemove.put(p, t);
+                }
+            });
+        }
 
         //heightmap/lighting
         nmsChunk.initLighting();
 
+        propLighting(nmsChunk);
+
         //Cleanup
         optimizedSections = new DataPaletteBlock[16];
+    }
+
+    private void propLighting(Chunk chunk) {
+        ChunkSection[] sections = chunk.getSections();
+        for(int x = 0; x < 16; x++) {
+            for(int z = 0; z < 16; z++) {
+                int topBlock = chunk.heightMap[z << 4 | x];
+                for(int y = 255; y >= 0; y--) {
+                    ChunkSection section = sections[y >> 4];
+                    if(section == null) {
+                        y -= 15;
+                        continue;
+                    }
+                    NibbleArray skyLight = section.getSkyLightArray();
+                    if(y < topBlock) {
+                        if(skyLight.a(x, y & 15, z) < 15)
+                            break;
+                        skyLight.a(x, y & 15, z, 0);
+                    } else {
+                        skyLight.a(x, y & 15, 15);
+                    }
+                }
+            }
+        }
     }
 
     @Override
