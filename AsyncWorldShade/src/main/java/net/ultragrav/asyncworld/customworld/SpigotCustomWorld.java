@@ -35,7 +35,7 @@ public class SpigotCustomWorld extends CustomWorld {
         return sV;
     }
 
-    private final SpigotCustomWorldAsyncWorld asyncWorld = new SpigotCustomWorldAsyncWorld();
+    private SpigotCustomWorldAsyncWorld asyncWorld = new SpigotCustomWorldAsyncWorld();
 
     public ExecutorService service = Executors.newSingleThreadExecutor();
 
@@ -158,6 +158,8 @@ public class SpigotCustomWorld extends CustomWorld {
      */
     @Override
     public void unload() {
+        this.asyncWorld = new SpigotCustomWorldAsyncWorld(); //In case something has a reference to the world server, and therefore this object,
+        //It's a good idea to dereference the async world and therefore all the chunks inside of it
         if(this.getBukkitWorld() == null)
             return;
         Bukkit.unloadWorld(this.getBukkitWorld(), false);
