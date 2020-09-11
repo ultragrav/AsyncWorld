@@ -447,7 +447,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 chunks.add(getChunk(i, j));
 
         int threads = chunks.size() >= Runtime.getRuntime().availableProcessors() ? Runtime.getRuntime().availableProcessors() : 1;
-        if(chunks.size() < 16)
+        if(chunks.size() < 36)
             threads = 1;
 
         int sectionMask = 0;

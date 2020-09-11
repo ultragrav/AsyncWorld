@@ -292,10 +292,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 continue;
             }
 
-            for(int i = 0; i < 4096; ++i) {
-                int x = i & 15;
-                int y = i >> 8 & 15;
-                int z = i >> 4 & 15;
+            for(int i = 0; i < 4096; i++) {
+                int x = getLX(i);
+                int y = getLY(i);
+                int z = getLZ(i);
 
                 int block = Block.REGISTRY_ID.getId(section.getBlocks().a(x, y, z));
 

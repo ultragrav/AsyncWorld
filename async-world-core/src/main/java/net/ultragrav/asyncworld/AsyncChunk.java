@@ -20,8 +20,26 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
     protected static short[] airFilled = new short[4096];
 
+    public static byte[] CACHE_X = new byte[4096];
+    public static byte[] CACHE_Y = new byte[4096];
+    public static byte[] CACHE_Z = new byte[4096];
+
+    public static short[][][] CACHE_INDEX = new short[16][16][16];
+
+
     static {
         Arrays.fill(airFilled, (short) -1);
+
+        for(int i = 0; i < 4096; i++) {
+            byte x = (byte) (i & 0xF);
+            byte y = (byte) (i >>> 8);
+            byte z = (byte) (i >>> 4 & 0xF);
+            CACHE_X[i] = x;
+            CACHE_Y[i] = y;
+            CACHE_Z[i] = z;
+
+            CACHE_INDEX[x][y][z] = (short) i;
+        }
     }
 
     protected GUChunkSection[] chunkSections = new GUChunkSection[16];
@@ -44,22 +62,22 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     public int getLX(int loc) {
-        return loc & 0xF;
+        return CACHE_X[loc];
     }
 
     public int getLY(int loc) {
-        return loc >>> 8;
+        return CACHE_Y[loc];
     }
 
     public int getLZ(int loc) {
-        return loc >>> 4 & 0xF;
+        return CACHE_Z[loc];
     }
 
     /**
      * Please only use with numbers <16
      */
     public int getCombinedLoc(int x, int y, int z) {
-        return y << 8 | z << 4 | x;
+        return CACHE_INDEX[x][y][z];
     }
 
     public synchronized void setBiome(int x, int z, int biome) {

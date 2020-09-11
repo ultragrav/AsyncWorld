@@ -83,7 +83,10 @@ public class SpigotCustomWorld extends CustomWorld {
             worldHandler.createWorld(this, name);
 
         //Generate world
+        long ms = System.currentTimeMillis();
         generator.accept(asyncWorld);
+        ms = System.currentTimeMillis() - ms;
+        System.out.println("Generation: " + ms + "ms");
 
         //Set chunks' sections (write to world)
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()); //Multi-threaded
