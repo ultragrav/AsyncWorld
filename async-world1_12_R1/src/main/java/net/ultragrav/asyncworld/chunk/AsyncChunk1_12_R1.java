@@ -182,6 +182,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
     }
 
+    public Object getSection(int sectionIndex) {
+        validateCachedChunk();
+        return nmsCachedChunk.getSections()[sectionIndex];
+    }
+
     @Override
     public synchronized void loadTiles() {
 

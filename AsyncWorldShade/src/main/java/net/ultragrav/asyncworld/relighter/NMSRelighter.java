@@ -3,6 +3,7 @@ package net.ultragrav.asyncworld.relighter;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.QueuedChunk;
+import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +52,11 @@ public class NMSRelighter implements Relighter {
             if (scheduled)
                 return;
             new Thread(() -> {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 lock.lock();
                 List<QueuedRelight> relights;
                 try {
@@ -161,7 +167,7 @@ public class NMSRelighter implements Relighter {
             for (int i = chunks.size() - 1; i >= 0; i--) { // Smooth backwards
                 QueuedRelight chunk1 = chunks.get(i);
                 if (chunk1.smooth) {
-                    smoothSkyLight(chunk1, y, false);
+                   smoothSkyLight(chunk1, y, false);
                 }
             }
         }
@@ -176,6 +182,7 @@ public class NMSRelighter implements Relighter {
         int[] mask = chunk.current;
         final int bx = chunk.chunk.getLoc().getX() << 4;
         final int bz = chunk.chunk.getLoc().getZ() << 4;
+
         if (direction) {
             for (int j = 0; j < 256; j++) {
                 int x = j & 15;
