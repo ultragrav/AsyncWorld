@@ -46,8 +46,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     protected GUChunkSection[] chunkSections = new GUChunkSection[16];
     @Getter
     private ChunkLocation loc;
-    @Getter(AccessLevel.PROTECTED)
-    private volatile int editedSections;
+    @Getter
+    protected volatile int editedSections;
     @Getter
     private AsyncWorld parent;
 

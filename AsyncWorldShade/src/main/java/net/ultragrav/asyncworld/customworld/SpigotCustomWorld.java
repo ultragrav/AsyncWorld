@@ -1,18 +1,24 @@
 package net.ultragrav.asyncworld.customworld;
 
+import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
+import net.ultragrav.asyncworld.relighter.NMSRelighter;
+import net.ultragrav.asyncworld.relighter.Relighter;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class SpigotCustomWorld extends CustomWorld {
 
-    private CustomWorldHandler1_12 worldHandler;
+    private CustomWorldHandler worldHandler;
 
     private static int sV;
 
@@ -35,7 +41,9 @@ public class SpigotCustomWorld extends CustomWorld {
         return sV;
     }
 
-    private SpigotCustomWorldAsyncWorld asyncWorld = new SpigotCustomWorldAsyncWorld();
+    private SpigotCustomWorldAsyncWorld asyncWorld;
+
+    private final Relighter relighter;
 
     public ExecutorService service = Executors.newSingleThreadExecutor();
 
@@ -53,6 +61,7 @@ public class SpigotCustomWorld extends CustomWorld {
      * function #create that consumes an AsyncWorld instance. #create may, and it is encouraged to, be called
      * asynchronously. #create will almost always take at least 50ms to execute due to scheduling delays, as it
      * does need some operations to happen synchronously, such as calling WorldInitEvent and WorldLoadEvent.
+     *
      * @param plugin
      * @param name
      * @param sizeChunksX
@@ -64,10 +73,13 @@ public class SpigotCustomWorld extends CustomWorld {
         this.plugin = plugin;
         this.sizeChunksX = sizeChunksX;
         this.sizeChunksZ = sizeChunksZ;
+        this.asyncWorld = new SpigotCustomWorldAsyncWorld(this.plugin);
+        this.relighter = new NMSRelighter(this.plugin);
     }
 
     /**
      * Create the world
+     *
      * @param generator The function that will generate the world's contents
      */
     @Override
@@ -90,12 +102,15 @@ public class SpigotCustomWorld extends CustomWorld {
 
         //Set chunks' sections (write to world)
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()); //Multi-threaded
-        asyncWorld.getChunkMap().getCachedCopy().forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
+        List<CustomWorldAsyncChunk<?>> chunks = asyncWorld.getChunkMap().getCachedCopy();
+        asyncWorld.getChunkMap().clear();
+        chunks.forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
+        queueSkyRelight(chunks); //Relight chunks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
 
 
         //Add to world list (Must be sync)
-        if(!Bukkit.isPrimaryThread()) {
+        if (!Bukkit.isPrimaryThread()) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             new BukkitRunnable() {
                 @Override
@@ -108,6 +123,36 @@ public class SpigotCustomWorld extends CustomWorld {
         } else {
             worldHandler.addToWorldList();
         }
+    }
+
+    private void queueSkyRelight(List<CustomWorldAsyncChunk<?>> chunks) {
+        Map<AsyncChunk, Integer> masks = new HashMap<>();
+        for (AsyncChunk chunk : chunks) {
+            int editedSections = chunk.getEditedSections();
+            for (int i = 0; i < 16; i++) {
+                boolean a = ((editedSections >>> i) & 1) != 0;
+                if (a && i != 0) {
+                    editedSections |= 1 << (i - 1);
+                }
+                if (a && i != 15) {
+                    editedSections |= 1 << (i++ + 1);
+                }
+            }
+            masks.put(chunk, editedSections);
+        }
+        //Queue
+        chunks.forEach(c -> {
+            int mask = masks.get(c);
+            Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
+            for (int i = 0; i < 16; i++) {
+                if ((mask >>> i & 1) == 1) {
+                    actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
+                } else {
+                    actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                }
+            }
+            relighter.queueSkyRelight(c, actions);
+        });
     }
 
     /**
@@ -161,9 +206,9 @@ public class SpigotCustomWorld extends CustomWorld {
      */
     @Override
     public void unload() {
-        this.asyncWorld = new SpigotCustomWorldAsyncWorld(); //In case something has a reference to the world server, and therefore this object,
+        this.asyncWorld = new SpigotCustomWorldAsyncWorld(this.plugin); //In case something has a reference to the world server, and therefore this object,
         //It's a good idea to dereference the async world and therefore all the chunks inside of it
-        if(this.getBukkitWorld() == null)
+        if (this.getBukkitWorld() == null)
             return;
         Bukkit.unloadWorld(this.getBukkitWorld(), false);
     }

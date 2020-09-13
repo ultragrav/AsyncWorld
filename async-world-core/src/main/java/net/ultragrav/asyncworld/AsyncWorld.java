@@ -79,6 +79,8 @@ public abstract class AsyncWorld {
 
     public abstract int syncGetSkyLight(int x, int y, int z);
 
+    public abstract void ensureChunkLoaded(AsyncChunk... chunks);
+
     /**
      * Implementations may write an optimized algorithm for creating schematics
      * if an implementation does not support this, this must still return the schematic but made the normal way

@@ -4,6 +4,8 @@ import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.QueuedChunk;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +16,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NMSRelighter implements Relighter {
+
+    private final Plugin plugin;
+
+    public NMSRelighter(Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     private static class QueuedRelight implements Comparable<QueuedRelight> {
         public final AsyncChunk chunk;
@@ -96,6 +104,9 @@ public class NMSRelighter implements Relighter {
     //Credit to boydti (FastAsyncWorldEdit) for much of the below
 
     private void skyRelight(List<QueuedRelight> chunks) {
+        if(chunks.size() != 0) {
+            chunks.get(0).chunk.getParent().ensureChunkLoaded((AsyncChunk[]) chunks.stream().map(c -> c.chunk).toArray());
+        }
         for (int y = 255; y >= 0; y--) {
             for (QueuedRelight queuedChunk : chunks) {
                 int[] current = queuedChunk.current;
@@ -171,7 +182,12 @@ public class NMSRelighter implements Relighter {
                 }
             }
         }
-        chunks.forEach(c -> c.chunk.sendPackets(0xFFFF)); //Send chunks
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                chunks.forEach(c -> c.chunk.sendPackets(0xFFFF)); //Send chunks
+            }
+        }.runTask(this.plugin);
     }
 
     private int getOpacity(AsyncChunk chunk, int x, int y, int z) {

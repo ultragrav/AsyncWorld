@@ -11,7 +11,6 @@ import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
-import org.bukkit.ChunkSnapshot;
 import org.bukkit.World;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -35,7 +34,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
     private UUID world;
     private ChunkMap chunkMap = new ChunkMap(this);
     private int sV = 0;
-    private Relighter relighter = new NMSRelighter();
+    private Relighter relighter;
 
     public SpigotAsyncWorld(World world) {
         this(world, GlobalChunkQueue.instance);
@@ -44,6 +43,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
     public SpigotAsyncWorld(World world, ChunkQueue chunkQueue) {
         this.world = world.getUID();
         this.chunkQueue = chunkQueue;
+        this.relighter = new NMSRelighter(chunkQueue.getPlugin());
 
         String name = Bukkit.getServer().getClass().getName();
         String[] parts = name.split("\\.");
@@ -421,7 +421,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
         return future;
     }
 
-    private void ensureLoaded(AsyncChunk... chunks) {
+    @Override
+    public void ensureChunkLoaded(AsyncChunk... chunks) {
         boolean sync = Bukkit.isPrimaryThread();
         List<AsyncChunk> syncLoad = new ArrayList<>();
         for (AsyncChunk chunk : chunks) {
@@ -637,7 +638,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 chunks.add(getChunk(i, j));
 
         if (ensureLoaded)
-            ensureLoaded(chunks.toArray(new AsyncChunk[0]));
+            ensureChunkLoaded(chunks.toArray(new AsyncChunk[0]));
 
         if (parallelism > 1) {
             ForkJoinPool pool = new ForkJoinPool(parallelism);
@@ -695,7 +696,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 chunks.add(getChunk(i, j));
 
         if (ensureLoaded)
-            ensureLoaded(chunks.toArray(new AsyncChunk[0]));
+            ensureChunkLoaded(chunks.toArray(new AsyncChunk[0]));
 
         if (parallelism == 1) {
             chunks.forEach(action);

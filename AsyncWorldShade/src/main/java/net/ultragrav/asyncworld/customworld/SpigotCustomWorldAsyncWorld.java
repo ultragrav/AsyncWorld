@@ -11,6 +11,8 @@ import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -31,8 +33,10 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
     private SpigotCustomWorldChunkMap chunkMap = new SpigotCustomWorldChunkMap(this);
 
     //private BunkerWorldServer worldServer;
+    private final Plugin plugin;
 
-    public SpigotCustomWorldAsyncWorld() {
+    public SpigotCustomWorldAsyncWorld(Plugin plugin) {
+        this.plugin = plugin;
     }
 
     @Override
@@ -349,27 +353,53 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
 
     @Override
     public int syncGetBrightnessOpacity(int x, int y, int z) {
-        return 0;
+        return getChunk(x >> 4, z >> 4).syncGetBrightnessOpacity(x & 15, y, z & 15);
     }
 
     @Override
     public void syncSetEmittedLight(int x, int y, int z, int value) {
-
+        getChunk(x >> 4, z >> 4).syncSetEmittedLight(x & 15, y, z & 15, value);
     }
 
     @Override
     public void syncSetSkyLight(int x, int y, int z, int value) {
-
+        getChunk(x >> 4, z >> 4).syncSetSkyLight(x & 15, y, z & 15, value);
     }
 
     @Override
     public int syncGetEmittedLight(int x, int y, int z) {
-        return 0;
+        return getChunk(x >> 4, z >> 4).syncGetEmittedLight(x & 15, y, z & 15);
     }
 
     @Override
     public int syncGetSkyLight(int x, int y, int z) {
-        return 0;
+        return getChunk(x >> 4, z >> 4).syncGetSkyLight(x & 15, y, z & 15);
+    }
+
+    @Override
+    public void ensureChunkLoaded(AsyncChunk... chunks) {
+        boolean sync = Bukkit.isPrimaryThread();
+        List<AsyncChunk> syncLoad = new ArrayList<>();
+        for (AsyncChunk chunk : chunks) {
+            if (!chunk.isChunkLoaded()) {
+                if (sync) {
+                    getBukkitWorld().loadChunk(chunk.getLoc().getX(), chunk.getLoc().getZ());
+                } else {
+                    syncLoad.add(chunk);
+                }
+            }
+        }
+        if (!syncLoad.isEmpty()) {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ()));
+                    future.complete(null);
+                }
+            }.runTask(this.plugin);
+            future.join();
+        }
     }
 
     @Override

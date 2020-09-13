@@ -6,8 +6,11 @@ import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.nbt.TagInt;
+import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer> {
     public CustomWorldAsyncChunk1_12(AsyncWorld parent, ChunkLocation loc) {
@@ -32,6 +35,35 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public void sendPackets(int mask) {
 
+        ChunkLocation loc = this.getLoc();
+        Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
+        PacketPlayOutMapChunk packet;
+        PacketPlayOutMapChunk secondMapPacket;
+
+        //The client will for some reason de-spawn entities in map chunk updates which have a mask
+        // of 65535 or 0 however 0 will never be called so only check for 65535
+        if (mask == 65535) {
+            packet = new PacketPlayOutMapChunk(nmsChunk, 65280);
+            secondMapPacket = new PacketPlayOutMapChunk(nmsChunk, 255);
+        } else {
+            packet = new PacketPlayOutMapChunk(nmsChunk, mask);
+            secondMapPacket = null;
+        }
+
+        List<Packet<?>> tilePackets = new ArrayList<>();
+        nmsChunk.getTileEntities().forEach((key, value) -> tilePackets.add(value.getUpdatePacket()));
+
+        PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getPlayerChunkMap();
+        PlayerChunk playerChunk = map.getChunk(loc.getX(), loc.getZ());
+        if (playerChunk == null)
+            return;
+        playerChunk.c.forEach(p -> {
+            p.playerConnection.sendPacket(packet);
+            if (secondMapPacket != null) {
+                p.playerConnection.sendPacket(secondMapPacket);
+            }
+            tilePackets.forEach(packet1 -> p.playerConnection.sendPacket(packet1));
+        });
     }
 
     @Override
@@ -43,6 +75,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         int x = getLX(index), y = getLY(index), z = getLZ(index);
         section.getSkyLightArray().a(x, y, z, 15);
         section.getBlocks().setBlock(x, y, z, Block.getByCombinedId(block));
+        this.editedSections |= 1 << sectionIndex;
         if (addTile && hasTileEntity(block & 0xFFF)) {
             setTileEntity(x, y + (sectionIndex << 4), z, new TagCompound());
         }
@@ -148,27 +181,58 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
     @Override
     public int syncGetEmittedLight(int x, int y, int z) {
-        return 0;
+        int sectionIndex = y >> 4;
+        if(nmsStoredChunk == null)
+            return 0;
+        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        return nmsStoredChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
     }
 
     @Override
     public int syncGetSkyLight(int x, int y, int z) {
-        return 0;
+        int sectionIndex = y >> 4;
+        if(nmsStoredChunk == null)
+            return 0;
+        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        return nmsStoredChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
     }
 
     @Override
     public int syncGetBrightnessOpacity(int x, int y, int z) {
-        return 0;
+        int sectionIndex = y >> 4;
+        if(nmsStoredChunk == null)
+            return 0;
+        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        IBlockData data = nmsStoredChunk.getSections()[sectionIndex].getBlocks().a(x, y & 15, z);
+        return data.d() << 4 | data.c();
     }
 
     @Override
     public void syncSetEmittedLight(int x, int y, int z, int value) {
-
+        int sectionIndex = y >> 4;
+        if(nmsStoredChunk == null)
+            return;
+        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+            nmsStoredChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+        }
+        nmsStoredChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
     }
 
     @Override
     public void syncSetSkyLight(int x, int y, int z, int value) {
-
+        int sectionIndex = y >> 4;
+        if(nmsStoredChunk == null)
+            return;
+        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+            nmsStoredChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+        }
+        nmsStoredChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
     }
 
     @Override
