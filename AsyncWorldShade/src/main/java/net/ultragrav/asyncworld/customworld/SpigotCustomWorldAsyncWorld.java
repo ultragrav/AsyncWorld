@@ -34,14 +34,16 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
 
     //private BunkerWorldServer worldServer;
     private final Plugin plugin;
+    private final CustomWorld world;
 
-    public SpigotCustomWorldAsyncWorld(Plugin plugin) {
+    public SpigotCustomWorldAsyncWorld(CustomWorld world, Plugin plugin) {
         this.plugin = plugin;
+        this.world = world;
     }
 
     @Override
     public World getBukkitWorld() {
-        return null;
+        return world.getBukkitWorld();
     }
 
     public CustomWorldAsyncChunk<?> getChunk(int cx, int cz) {

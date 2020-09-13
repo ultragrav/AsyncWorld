@@ -352,6 +352,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
     }
 
     @Override
+    public void setBiome(int x, int z, int value) {
+        getChunk(x >> 4, z >> 4).setBiome(x & 15,z & 15, value);
+    }
+
+    @Override
     public void setBlock(int x, int y, int z, int id, byte data) {
         AsyncChunk chunk = getChunk(x >> 4, z >> 4);
         chunk.writeBlock(x & 15, y, z & 15, id, data);

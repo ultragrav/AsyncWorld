@@ -105,13 +105,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     }
 
     public synchronized void finish(WorldServer server) {
-        nmsStoredChunk = new Chunk(server, this.getLoc().getX(), this.getLoc().getZ());
-        Chunk nmsChunk = nmsStoredChunk;
-        nmsChunk.mustSave = true;
-        nmsChunk.f(true);
-
         try {
-
+            nmsStoredChunk = new Chunk(server, this.getLoc().getX(), this.getLoc().getZ());
+            Chunk nmsChunk = nmsStoredChunk;
+            nmsChunk.mustSave = true;
+            nmsChunk.f(true);
             for (ChunkSection section : sections) {
                 if (section == null)
                     continue;
@@ -131,8 +129,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
                     //Which spigot catches as asynchronous and blocks until main thread catches up, causing a crash
                     IBlockData iblockdata = nmsChunk.getBlockData(bp);
                     Block block = iblockdata.getBlock();
-                    entity = !block.isTileEntity() ? null : ((ITileEntity)block).a(nmsChunk.getWorld(), iblockdata.getBlock().toLegacyData(iblockdata));
-                    if(entity != null) {
+                    entity = !block.isTileEntity() ? null : ((ITileEntity) block).a(nmsChunk.getWorld(), iblockdata.getBlock().toLegacyData(iblockdata));
+                    if (entity != null) {
                         entity.a(nmsChunk.getWorld()); //Set world
                         nmsChunk.getWorld().a(entity); //Add to world
                         nmsChunk.a(bp, entity); //Add to chunk
@@ -151,6 +149,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
             this.flushBiomes();
             nmsChunk.initLighting();
+        } catch(Throwable e) {
+            e.printStackTrace();
+            throw e;
         } finally {
             finished = true;
             this.notifyAll();
@@ -182,9 +183,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public int syncGetEmittedLight(int x, int y, int z) {
         int sectionIndex = y >> 4;
-        if(nmsStoredChunk == null)
+        if (nmsStoredChunk == null)
             return 0;
-        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
         return nmsStoredChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
@@ -193,7 +194,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public int syncGetSkyLight(int x, int y, int z) {
         int sectionIndex = y >> 4;
-        if(nmsStoredChunk == null)
+        if (nmsStoredChunk == null)
             return 0;
         if (nmsStoredChunk.getSections()[sectionIndex] == null) {
             return 0;
@@ -204,9 +205,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public int syncGetBrightnessOpacity(int x, int y, int z) {
         int sectionIndex = y >> 4;
-        if(nmsStoredChunk == null)
+        if (nmsStoredChunk == null)
             return 0;
-        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
         IBlockData data = nmsStoredChunk.getSections()[sectionIndex].getBlocks().a(x, y & 15, z);
@@ -216,9 +217,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public void syncSetEmittedLight(int x, int y, int z, int value) {
         int sectionIndex = y >> 4;
-        if(nmsStoredChunk == null)
+        if (nmsStoredChunk == null)
             return;
-        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
             nmsStoredChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
         }
         nmsStoredChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
@@ -227,9 +228,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public void syncSetSkyLight(int x, int y, int z, int value) {
         int sectionIndex = y >> 4;
-        if(nmsStoredChunk == null)
+        if (nmsStoredChunk == null)
             return;
-        if(nmsStoredChunk.getSections()[sectionIndex] == null) {
+        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
             nmsStoredChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
         }
         nmsStoredChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);

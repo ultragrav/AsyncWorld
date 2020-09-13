@@ -3,6 +3,7 @@ package net.ultragrav.asyncworld.customworld;
 import net.minecraft.server.v1_12_R1.MinecraftServer;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.craftbukkit.v1_12_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
 import org.bukkit.event.world.WorldInitEvent;
@@ -28,7 +29,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
     }
     private CustomWorldServer1_12 world = null;
 
-    private final ReentrantLock safetyLock = new ReentrantLock(true);
+    private static final ReentrantLock safetyLock = new ReentrantLock(true);
 
     @Override
     public void finishChunk(CustomWorldAsyncChunk<?> chunk) {

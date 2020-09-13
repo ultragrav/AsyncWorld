@@ -8,6 +8,7 @@ import net.ultragrav.utils.IntVector2D;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -58,6 +59,8 @@ public abstract class AsyncWorld {
      * For more information visit the gamepedia page on Block Entities
      */
     public abstract void setTile(int x, int y, int z, TagCompound tag);
+
+    public abstract void setBiome(int x, int z, int value);
 
     public abstract void setBlock(int x, int y, int z, int id, byte data);
 

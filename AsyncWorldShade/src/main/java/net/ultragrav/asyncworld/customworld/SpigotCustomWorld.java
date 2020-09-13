@@ -2,6 +2,7 @@ package net.ultragrav.asyncworld.customworld;
 
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
+import net.ultragrav.asyncworld.SpigotAsyncWorld;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
 import org.bukkit.Bukkit;
@@ -73,7 +74,7 @@ public class SpigotCustomWorld extends CustomWorld {
         this.plugin = plugin;
         this.sizeChunksX = sizeChunksX;
         this.sizeChunksZ = sizeChunksZ;
-        this.asyncWorld = new SpigotCustomWorldAsyncWorld(this.plugin);
+        this.asyncWorld = new SpigotCustomWorldAsyncWorld(this, this.plugin);
         this.relighter = new NMSRelighter(this.plugin);
     }
 
@@ -95,17 +96,13 @@ public class SpigotCustomWorld extends CustomWorld {
             worldHandler.createWorld(this, name);
 
         //Generate world
-        long ms = System.currentTimeMillis();
         generator.accept(asyncWorld);
-        ms = System.currentTimeMillis() - ms;
-        System.out.println("Generation: " + ms + "ms");
 
         //Set chunks' sections (write to world)
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()); //Multi-threaded
-        List<CustomWorldAsyncChunk<?>> chunks = asyncWorld.getChunkMap().getCachedCopy();
-        asyncWorld.getChunkMap().clear();
+        List<CustomWorldAsyncChunk<?>> chunks = asyncWorld.getChunkMap().getCachedCopy(); //DO NOT CLEAR THE CHUNK MAP because they're 1 time creation chunks
+        //that hold the nms chunks
         chunks.forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
-        queueSkyRelight(chunks); //Relight chunks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
 
 
@@ -123,6 +120,8 @@ public class SpigotCustomWorld extends CustomWorld {
         } else {
             worldHandler.addToWorldList();
         }
+
+        queueSkyRelight(chunks); //Relight chunks
     }
 
     private void queueSkyRelight(List<CustomWorldAsyncChunk<?>> chunks) {
@@ -140,9 +139,17 @@ public class SpigotCustomWorld extends CustomWorld {
             }
             masks.put(chunk, editedSections);
         }
+
+        //Must use a spigot async world because if the relighter creates any new async chunks, it would be bad if that chunk needed
+        //finish() to be called because it could be loaded -> it would stall the main thread
+        SpigotAsyncWorld spigotAsyncWorld = new SpigotAsyncWorld(getBukkitWorld());
+
         //Queue
         chunks.forEach(c -> {
             int mask = masks.get(c);
+
+            AsyncChunk spigotAsyncChunk = spigotAsyncWorld.getChunk(c.getLoc().getX(), c.getLoc().getZ());
+
             Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
             for (int i = 0; i < 16; i++) {
                 if ((mask >>> i & 1) == 1) {
@@ -151,7 +158,7 @@ public class SpigotCustomWorld extends CustomWorld {
                     actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
                 }
             }
-            relighter.queueSkyRelight(c, actions);
+            relighter.queueSkyRelight(spigotAsyncChunk, actions);
         });
     }
 
@@ -206,7 +213,7 @@ public class SpigotCustomWorld extends CustomWorld {
      */
     @Override
     public void unload() {
-        this.asyncWorld = new SpigotCustomWorldAsyncWorld(this.plugin); //In case something has a reference to the world server, and therefore this object,
+        this.asyncWorld = new SpigotCustomWorldAsyncWorld(this, this.plugin); //In case something has a reference to the world server, and therefore this object,
         //It's a good idea to dereference the async world and therefore all the chunks inside of it
         if (this.getBukkitWorld() == null)
             return;

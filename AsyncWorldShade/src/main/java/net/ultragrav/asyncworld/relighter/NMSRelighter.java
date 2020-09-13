@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class NMSRelighter implements Relighter {
 
@@ -105,7 +106,7 @@ public class NMSRelighter implements Relighter {
 
     private void skyRelight(List<QueuedRelight> chunks) {
         if(chunks.size() != 0) {
-            chunks.get(0).chunk.getParent().ensureChunkLoaded((AsyncChunk[]) chunks.stream().map(c -> c.chunk).toArray());
+            chunks.get(0).chunk.getParent().ensureChunkLoaded(chunks.stream().map(c -> c.chunk).toArray(AsyncChunk[]::new));
         }
         for (int y = 255; y >= 0; y--) {
             for (QueuedRelight queuedChunk : chunks) {

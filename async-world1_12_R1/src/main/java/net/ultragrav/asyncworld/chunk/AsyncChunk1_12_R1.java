@@ -134,6 +134,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public int syncGetEmittedLight(int x, int y, int z) {
         validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return 0;
         int sectionIndex = y >> 4;
         if(nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
@@ -144,6 +146,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public int syncGetSkyLight(int x, int y, int z) {
         validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return 0;
         int sectionIndex = y >> 4;
             if (nmsCachedChunk.getSections()[sectionIndex] == null) {
                 return 0;
@@ -154,6 +158,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public int syncGetBrightnessOpacity(int x, int y, int z) {
         validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return 0;
         int sectionIndex = y >> 4;
         if(nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
@@ -165,6 +171,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void syncSetEmittedLight(int x, int y, int z, int value) {
         validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return;
         int sectionIndex = y >> 4;
         if(nmsCachedChunk.getSections()[sectionIndex] == null) {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
@@ -175,6 +183,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void syncSetSkyLight(int x, int y, int z, int value) {
         validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return;
         int sectionIndex = y >> 4;
         if(nmsCachedChunk.getSections()[sectionIndex] == null) {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
