@@ -10,6 +10,7 @@ import org.bukkit.Chunk;
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public abstract class AsyncChunk implements Callable<AsyncChunk> {
@@ -51,7 +52,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     private AsyncWorld parent;
 
     @Getter(AccessLevel.PROTECTED)
-    private final Map<IntVector3D, TagCompound> tiles = new HashMap<>();
+    private final Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();
 
     protected byte[] biomes = new byte[256];
 
@@ -234,7 +235,9 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         return data == 0 ? -1 : (data == -1 ? 0 : (data & 0xFFFF));
     }
 
-    public abstract short getCombinedBlockSync(int x, int y, int z);
+    public abstract void sendPackets(int mask);
+
+    public abstract int getCombinedBlockSync(int x, int y, int z);
 
     public synchronized void optimize() {
         for (int i = 0; i < chunkSections.length; i++) {
@@ -286,6 +289,14 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public boolean isChunkLoaded() {
         return loc.getWorld().getBukkitWorld().isChunkLoaded(loc.getX(), loc.getZ());
     }
+
+    public abstract int syncGetEmittedLight(int x, int y, int z);
+    public abstract int syncGetSkyLight(int x, int y, int z);
+    public abstract int syncGetBrightnessOpacity(int x, int y, int z);
+    public abstract void syncSetEmittedLight(int x, int y, int z, int value);
+    public abstract void syncSetSkyLight(int x, int y, int z, int value);
+
+    public abstract void loadTiles();
 
     protected abstract void update();
 

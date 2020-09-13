@@ -346,4 +346,34 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
         }
     }
+
+    @Override
+    public int syncGetBrightnessOpacity(int x, int y, int z) {
+        return 0;
+    }
+
+    @Override
+    public void syncSetEmittedLight(int x, int y, int z, int value) {
+
+    }
+
+    @Override
+    public void syncSetSkyLight(int x, int y, int z, int value) {
+
+    }
+
+    @Override
+    public int syncGetEmittedLight(int x, int y, int z) {
+        return 0;
+    }
+
+    @Override
+    public int syncGetSkyLight(int x, int y, int z) {
+        return 0;
+    }
+
+    @Override
+    public Schematic optimizedCreateSchematic(CuboidRegion region, IntVector3D origin, int ignoreBlock) {
+        return new Schematic(origin, this, region, ignoreBlock);
+    }
 }

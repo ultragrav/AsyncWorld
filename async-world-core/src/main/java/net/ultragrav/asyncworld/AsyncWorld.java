@@ -1,8 +1,10 @@
 package net.ultragrav.asyncworld;
 
+import com.sun.org.apache.xml.internal.utils.IntVector;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.schematics.Schematic;
 import net.ultragrav.utils.CuboidRegion;
+import net.ultragrav.utils.IntVector2D;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.World;
@@ -66,4 +68,20 @@ public abstract class AsyncWorld {
     public abstract boolean syncFlush(int timeoutMs);
 
     public abstract void syncFastRefreshChunksInRegion(CuboidRegion region, int timeout);
+
+    public abstract int syncGetBrightnessOpacity(int x, int y, int z);
+
+    public abstract void syncSetEmittedLight(int x, int y, int z, int value);
+
+    public abstract void syncSetSkyLight(int x, int y, int z, int value);
+
+    public abstract int syncGetEmittedLight(int x, int y, int z);
+
+    public abstract int syncGetSkyLight(int x, int y, int z);
+
+    /**
+     * Implementations may write an optimized algorithm for creating schematics
+     * if an implementation does not support this, this must still return the schematic but made the normal way
+     */
+    public abstract Schematic optimizedCreateSchematic(CuboidRegion region, IntVector3D origin, int ignoreBlock);
 }

@@ -38,7 +38,6 @@ public class ChunkMap {
 
     public synchronized AsyncChunk getOrMake(int cx, int cz) {
         AsyncChunk chunk = this.get(cx, cz);
-
         if (chunk == null) {
             chunk = parent.getNewChunk(cx, cz);
             add(chunk);

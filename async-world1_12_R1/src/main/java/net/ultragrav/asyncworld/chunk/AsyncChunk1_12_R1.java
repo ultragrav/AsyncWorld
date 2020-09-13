@@ -26,6 +26,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     private static Field fieldTickingBlockCount;
     private static Field fieldNonEmptyBlockCount;
 
+    private Chunk nmsCachedChunk = null;
+
     static {
         try {
             fieldNonEmptyBlockCount = ChunkSection.class.getDeclaredField("nonEmptyBlockCount");
@@ -39,16 +41,25 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
     }
 
+    private void validateCachedChunk() {
+        if(nmsCachedChunk == null) {
+            if(!getParent().getBukkitWorld().isChunkLoaded(this.getLoc().getX(), this.getLoc().getZ())) {
+                return;
+            }
+            nmsCachedChunk = ((CraftChunk)getParent().getBukkitWorld().getChunkAt(this.getLoc().getX(), this.getLoc().getZ())).getHandle();
+        }
+    }
+
     @Override
-    public short getCombinedBlockSync(int x, int y, int z) {
+    public int getCombinedBlockSync(int x, int y, int z) {
         Chunk nmsChunk = getNmsChunk();
         ChunkSection[] sections = nmsChunk.getSections();
         ChunkSection section = sections[y >>> 4];
         if (section == null) {
             return 0;
         }
-        IBlockData data = section.getType(x, y & 15, z);
-        return (short) Block.getCombinedId(data);
+        IBlockData data = section.getBlocks().a(x, y & 15, z);
+        return Block.getCombinedId(data);
     }
 
     @Override
@@ -78,8 +89,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     private Chunk getNmsChunk() {
-        ChunkLocation loc = this.getLoc();
-        return ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
+        validateCachedChunk();
+        return nmsCachedChunk;
     }
 
     @Override
@@ -120,6 +131,72 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         this.sendPackets(mask);
     }
 
+    @Override
+    public int syncGetEmittedLight(int x, int y, int z) {
+        validateCachedChunk();
+        int sectionIndex = y >> 4;
+        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        return nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
+    }
+
+    @Override
+    public int syncGetSkyLight(int x, int y, int z) {
+        validateCachedChunk();
+        int sectionIndex = y >> 4;
+            if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+                return 0;
+            }
+        return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
+    }
+
+    @Override
+    public int syncGetBrightnessOpacity(int x, int y, int z) {
+        validateCachedChunk();
+        int sectionIndex = y >> 4;
+        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        IBlockData data = nmsCachedChunk.getSections()[sectionIndex].getBlocks().a(x, y & 15, z);
+        return data.d() << 4 | data.c();
+    }
+
+    @Override
+    public void syncSetEmittedLight(int x, int y, int z, int value) {
+        validateCachedChunk();
+        int sectionIndex = y >> 4;
+        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+        }
+        nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
+    }
+
+    @Override
+    public void syncSetSkyLight(int x, int y, int z, int value) {
+        validateCachedChunk();
+        int sectionIndex = y >> 4;
+        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+        }
+        nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
+    }
+
+    @Override
+    public synchronized void loadTiles() {
+
+        validateCachedChunk();
+
+        getTiles().clear();
+
+        nmsCachedChunk.getTileEntities().forEach((p, t) -> {
+            if (t == null)
+                return;
+            this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(t.save(new NBTTagCompound())));
+        });
+    }
+
+    @Override
     public void sendPackets(int mask) {
 
         ChunkLocation loc = this.getLoc();
@@ -156,7 +233,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void update() {
         ChunkLocation loc = this.getLoc();
-        Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
+        Chunk nmsChunk = getNmsChunk();
+        nmsCachedChunk = null;
 
         nmsChunk.mustSave = true;
         nmsChunk.f(true);
@@ -276,34 +354,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         //heightmap/lighting
         nmsChunk.initLighting();
 
-        propLighting(nmsChunk);
-
         //Cleanup
         optimizedSections = new DataPaletteBlock[16];
-    }
-
-    private void propLighting(Chunk chunk) {
-        ChunkSection[] sections = chunk.getSections();
-        for(int x = 0; x < 16; x++) {
-            for(int z = 0; z < 16; z++) {
-                int topBlock = chunk.heightMap[z << 4 | x];
-                for(int y = 255; y >= 0; y--) {
-                    ChunkSection section = sections[y >> 4];
-                    if(section == null) {
-                        y -= 15;
-                        continue;
-                    }
-                    NibbleArray skyLight = section.getSkyLightArray();
-                    if(y < topBlock) {
-                        if(skyLight.a(x, y & 15, z) < 15)
-                            break;
-                        skyLight.a(x, y & 15, z, 0);
-                    } else {
-                        skyLight.a(x, y & 15, 15);
-                    }
-                }
-            }
-        }
     }
 
     @Override

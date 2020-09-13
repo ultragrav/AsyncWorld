@@ -30,6 +30,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     }
 
     @Override
+    public void sendPackets(int mask) {
+
+    }
+
+    @Override
     public synchronized void setBlock(int sectionIndex, int index, int block, boolean addTile) {
         ChunkSection section = sections[sectionIndex];
         if (section == null) {
@@ -124,7 +129,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     }
 
     @Override
-    public short getCombinedBlockSync(int x, int y, int z) {
+    public int getCombinedBlockSync(int x, int y, int z) {
         return 0;
     }
 
@@ -139,6 +144,36 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
     @Override
     public void end(int mask) {
+    }
+
+    @Override
+    public int syncGetEmittedLight(int x, int y, int z) {
+        return 0;
+    }
+
+    @Override
+    public int syncGetSkyLight(int x, int y, int z) {
+        return 0;
+    }
+
+    @Override
+    public int syncGetBrightnessOpacity(int x, int y, int z) {
+        return 0;
+    }
+
+    @Override
+    public void syncSetEmittedLight(int x, int y, int z, int value) {
+
+    }
+
+    @Override
+    public void syncSetSkyLight(int x, int y, int z, int value) {
+
+    }
+
+    @Override
+    public void loadTiles() {
+
     }
 
     @Override
