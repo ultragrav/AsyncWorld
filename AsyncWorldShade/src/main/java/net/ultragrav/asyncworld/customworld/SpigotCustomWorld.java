@@ -1,5 +1,6 @@
 package net.ultragrav.asyncworld.customworld;
 
+import lombok.Getter;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.SpigotAsyncWorld;
@@ -54,7 +55,10 @@ public class SpigotCustomWorld extends CustomWorld {
 
     private final Plugin plugin;
 
+    @Getter
     private final int sizeChunksX;
+
+    @Getter
     private final int sizeChunksZ;
 
     /**
