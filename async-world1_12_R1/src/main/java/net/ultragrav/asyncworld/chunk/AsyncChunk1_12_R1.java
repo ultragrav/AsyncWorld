@@ -192,6 +192,99 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
     }
 
+    @Override
+    public List<TagCompound> syncGetTiles() {
+        validateCachedChunk();
+        List<TagCompound> list = new ArrayList<>();
+
+        nmsCachedChunk.getTileEntities().forEach((p, t) -> {
+            if (t == null)
+                return;
+           list.add(fromNMSCompound(t.save(new NBTTagCompound())));
+        });
+        return list;
+    }
+
+    @Override //Not async safe
+    public List<TagCompound> syncGetEntities() {
+        List<TagCompound> out = new ArrayList<>();
+        for(int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
+            if(nmsCachedChunk.getEntitySlices()[i] == null)
+                continue;
+            for(Entity entity : nmsCachedChunk.getEntitySlices()[i]) {
+                //All entities in the i-th section
+                NBTTagCompound nmsCompound = new NBTTagCompound();
+                if(entity.d(nmsCompound)) {
+                    TagCompound compound = fromNMSCompound(nmsCompound);
+                    out.add(compound);
+                }
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public int[] syncGetHeightMap() {
+        Chunk chunk = getNmsChunk();
+
+        int[] arr = new int[chunk.heightMap.length];
+        System.arraycopy(chunk.heightMap, 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public void syncGetBlocksAndData(byte[] blocks, byte[] data, int section) {
+        if(data.length < 2048 || blocks.length < 4096)
+            return;
+        ChunkSection sect = getNmsChunk().getSections()[section];
+        if(sect == null)
+            return;
+
+        sect.getBlocks().exportData(blocks, new NibbleArray(data));
+    }
+
+    @Override
+    public byte[] syncGetEmittedLight(int section) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection sect = chunk.getSections()[section];
+        if(sect == null)
+            return null;
+        byte[] arr = new byte[2048];
+        System.arraycopy(chunk.getSections()[section].getEmittedLightArray().asBytes(), 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public byte[] syncGetSkyLight(int section) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection sect = chunk.getSections()[section];
+        if(sect == null)
+            return null;
+        byte[] arr = new byte[2048];
+        System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public short getSectionBitMask() {
+        ChunkSection[] sections = getNmsChunk().getSections();
+        short mask = 0;
+        for(int i = 0; i < 16; i++) {
+            if(sections[i] !=  null) {
+                mask |= 1 << i;
+            }
+        }
+        return mask;
+    }
+
+    @Override
+    public byte[] syncGetBiomes() {
+        Chunk chunk = getNmsChunk();
+        byte[] arr = new byte[chunk.getBiomeIndex().length];
+        System.arraycopy(chunk.getBiomeIndex(), 0, arr, 0, arr.length);
+        return arr;
+    }
+
     public Object getSection(int sectionIndex) {
         validateCachedChunk();
         return nmsCachedChunk.getSections()[sectionIndex];
@@ -423,7 +516,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     }
 
-    private TagCompound fromNMSCompound(NBTTagCompound compound) {
+    public static TagCompound fromNMSCompound(NBTTagCompound compound) {
         return (TagCompound) fromNMSTag(compound);
     }
 

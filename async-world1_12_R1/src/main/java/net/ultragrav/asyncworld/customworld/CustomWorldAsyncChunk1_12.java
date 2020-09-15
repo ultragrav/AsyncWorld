@@ -4,13 +4,16 @@ import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
+import net.ultragrav.asyncworld.nbt.Tag;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.nbt.TagInt;
+import net.ultragrav.asyncworld.nbt.TagList;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer> {
     public CustomWorldAsyncChunk1_12(AsyncWorld parent, ChunkLocation loc) {
@@ -104,19 +107,98 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         }
     }
 
+    private CustomWorldChunkSnap cachedSnap = null;
+
+    private synchronized void fromSnap2(Chunk chunk, CustomWorldChunkSnap snap) {
+
+        chunk.e(true);
+        chunk.d(true);
+
+        System.arraycopy(snap.getHeightMap(), 0, chunk.heightMap, 0, chunk.heightMap.length); //Height map
+        this.biomes = snap.getBiomes(); //Biomes
+        snap.getTiles().forEach(t -> { //Tiles
+            TileEntity tile = TileEntity.create(chunk.getWorld(), AsyncChunk1_12_R1.fromGenericCompound(t));
+            if(tile != null)
+                chunk.a(tile);
+        });
+
+        //Entities
+        snap.getEntities().forEach(e -> loadEntity(e, chunk.getWorld(), chunk));
+    }
+
+    private Entity loadEntity(TagCompound tag, World world, Chunk chunk) {
+        Entity entity = EntityTypes.a(AsyncChunk1_12_R1.fromGenericCompound(tag), world);
+        chunk.g(true); //Literally have no idea what this does - something to do with saving
+
+        if (entity != null) {
+            chunk.a(entity);
+
+            Map<String, Tag> map = tag.getData();
+
+            if (map.containsKey("Passengers")) {
+                List<Tag> passengersList = ((TagList)map.get("Passengers")).getData();
+
+                for (Tag passengerTag : passengersList) {
+                    Entity passenger = loadEntity((TagCompound) passengerTag, world, chunk);
+
+                    if (passengerTag != null) {
+                        passenger.a(entity, true);
+                    }
+                }
+            }
+        }
+
+        return entity;
+    }
+
+    @Override
+    public synchronized void fromSnap(CustomWorldChunkSnap snap) {
+        ChunkSection[] sects;
+        if(nmsStoredChunk != null) {
+            //Replace existing
+            nmsStoredChunk = new Chunk(nmsStoredChunk.world, this.getLoc().getX(), this.getLoc().getZ());
+            sects = nmsStoredChunk.getSections();
+            fromSnap2(nmsStoredChunk, snap);
+        } else {
+            //Cache
+            cachedSnap = snap;
+            sects = sections;
+        }
+
+        short mask = snap.getSectionBitMask();
+        for(int i = 0; i < 16; i++) {
+            if(((mask >>> i) & 1) == 0)
+                continue;
+
+            ChunkSection section = sects[i] = new ChunkSection(i << 4, true);
+
+            section.b(new NibbleArray(snap.getSkyLight()[i])); //Sky light
+            section.a(new NibbleArray(snap.getEmittedLight()[i])); //Emitted light
+
+            section.getBlocks().a(snap.getBlocks()[i], new NibbleArray(snap.getBlockData()[i]), null); //Blocks
+
+            //Block counts are calculated in finish()
+        }
+    }
+
     public synchronized void finish(WorldServer server) {
         try {
             nmsStoredChunk = new Chunk(server, this.getLoc().getX(), this.getLoc().getZ());
             Chunk nmsChunk = nmsStoredChunk;
             nmsChunk.mustSave = true;
             nmsChunk.f(true);
+
+            nmsChunk.a(sections); //Set the blocks
+
+            if(this.cachedSnap != null) {
+                fromSnap2(nmsStoredChunk, cachedSnap);
+            }
+
             for (ChunkSection section : sections) {
                 if (section == null)
                     continue;
                 section.recalcBlockCounts();
             }
-
-            nmsChunk.a(sections); //Set the blocks
 
             //Tile Entities
             getTiles().forEach((intVector3D, te) -> {
@@ -148,7 +230,10 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             });
 
             this.flushBiomes();
-            nmsChunk.initLighting();
+            if(getEditedSections() != 0) //No blocks edited, or loaded from chunk snap -> which contains lighting already
+                nmsChunk.initLighting();
+
+            this.cachedSnap = null;
         } catch(Throwable e) {
             e.printStackTrace();
             throw e;
@@ -182,60 +267,125 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
     @Override
     public int syncGetEmittedLight(int x, int y, int z) {
-        int sectionIndex = y >> 4;
-        if (nmsStoredChunk == null)
-            return 0;
-        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
-            return 0;
-        }
-        return nmsStoredChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
+        return 0;
     }
 
     @Override
     public int syncGetSkyLight(int x, int y, int z) {
-        int sectionIndex = y >> 4;
-        if (nmsStoredChunk == null)
-            return 0;
-        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
-            return 0;
-        }
-        return nmsStoredChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
+        return 0;
     }
 
     @Override
     public int syncGetBrightnessOpacity(int x, int y, int z) {
-        int sectionIndex = y >> 4;
-        if (nmsStoredChunk == null)
-            return 0;
-        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
-            return 0;
-        }
-        IBlockData data = nmsStoredChunk.getSections()[sectionIndex].getBlocks().a(x, y & 15, z);
-        return data.d() << 4 | data.c();
+        return 0;
     }
 
     @Override
     public void syncSetEmittedLight(int x, int y, int z, int value) {
-        int sectionIndex = y >> 4;
-        if (nmsStoredChunk == null)
-            return;
-        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
-            nmsStoredChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
-        }
-        nmsStoredChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
+
     }
 
     @Override
     public void syncSetSkyLight(int x, int y, int z, int value) {
-        int sectionIndex = y >> 4;
-        if (nmsStoredChunk == null)
-            return;
-        if (nmsStoredChunk.getSections()[sectionIndex] == null) {
-            nmsStoredChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
-        }
-        nmsStoredChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
+
     }
 
+    public Chunk getNmsChunk() {
+        this.awaitFinish();
+        return this.nmsStoredChunk;
+    }
+
+    @Override
+    public List<TagCompound> syncGetTiles() {
+        List<TagCompound> list = new ArrayList<>();
+
+        getNmsChunk().getTileEntities().forEach((p, t) -> {
+            if (t == null)
+                return;
+            list.add(AsyncChunk1_12_R1.fromNMSCompound(t.save(new NBTTagCompound())));
+        });
+        return list;
+    }
+
+    @Override //Not async safe
+    public List<TagCompound> syncGetEntities() {
+        List<TagCompound> out = new ArrayList<>();
+        for(int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
+            if(getNmsChunk().getEntitySlices()[i] == null)
+                continue;
+            for(Entity entity : getNmsChunk().getEntitySlices()[i]) {
+                //All entities in the i-th section
+                NBTTagCompound nmsCompound = new NBTTagCompound();
+                if(entity.d(nmsCompound)) {
+                    TagCompound compound = AsyncChunk1_12_R1.fromNMSCompound(nmsCompound);
+                    out.add(compound);
+                }
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public int[] syncGetHeightMap() {
+        Chunk chunk = getNmsChunk();
+
+        int[] arr = new int[chunk.heightMap.length];
+        System.arraycopy(chunk.heightMap, 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public void syncGetBlocksAndData(byte[] blocks, byte[] data, int section) {
+        if(data.length < 2048 || blocks.length < 4096)
+            return;
+        ChunkSection sect = getNmsChunk().getSections()[section];
+        if(sect == null)
+            return;
+
+        sect.getBlocks().exportData(blocks, new NibbleArray(data));
+    }
+
+    @Override
+    public byte[] syncGetEmittedLight(int section) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection sect = chunk.getSections()[section];
+        if(sect == null)
+            return null;
+        byte[] arr = new byte[2048];
+        System.arraycopy(chunk.getSections()[section].getEmittedLightArray().asBytes(), 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public byte[] syncGetSkyLight(int section) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection sect = chunk.getSections()[section];
+        if(sect == null)
+            return null;
+        byte[] arr = new byte[2048];
+        System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public short getSectionBitMask() {
+        ChunkSection[] sections = getNmsChunk().getSections();
+        short mask = 0;
+        for(int i = 0; i < 16; i++) {
+            if(sections[i] != null) {
+                mask |= 1 << i;
+            }
+        }
+        return mask;
+    }
+
+    @Override
+    public byte[] syncGetBiomes() {
+        Chunk chunk = getNmsChunk();
+        byte[] arr = new byte[chunk.getBiomeIndex().length];
+        System.arraycopy(chunk.getBiomeIndex(), 0, arr, 0, arr.length);
+        return arr;
+    }
     @Override
     public void loadTiles() {
 

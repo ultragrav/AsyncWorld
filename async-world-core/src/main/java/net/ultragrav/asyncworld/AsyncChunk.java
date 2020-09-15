@@ -295,6 +295,14 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public abstract int syncGetBrightnessOpacity(int x, int y, int z);
     public abstract void syncSetEmittedLight(int x, int y, int z, int value);
     public abstract void syncSetSkyLight(int x, int y, int z, int value);
+    public abstract List<TagCompound> syncGetTiles();
+    public abstract List<TagCompound> syncGetEntities();
+    public abstract int[] syncGetHeightMap();
+    public abstract void syncGetBlocksAndData(byte[] blocks, byte[] data, int section);
+    public abstract byte[] syncGetEmittedLight(int section);
+    public abstract byte[] syncGetSkyLight(int section);
+    public abstract short getSectionBitMask();
+    public abstract byte[] syncGetBiomes();
 
     public abstract void loadTiles();
 

@@ -25,4 +25,5 @@ public abstract class CustomWorldAsyncChunk<T> extends AsyncChunk {
     public abstract void setBlock(int section, int index, int combinedBlockId, boolean addTile);
 
     public abstract void awaitFinish();
+    public abstract void fromSnap(CustomWorldChunkSnap snap);
 }
