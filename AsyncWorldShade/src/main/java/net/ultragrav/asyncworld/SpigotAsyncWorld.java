@@ -145,7 +145,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                                     int block = schematic.getBlockAt(interX, interY, czi + z);
                                     if (block == -1)
                                         continue;
-                                    chunk.writeBlock(x, y, z, block & 0xFFF, (byte) (block >>> 12 & 0xF));
+                                    chunk.writeBlock(x, y, z, block & 0xFFF, (byte) (block >>> 12 & 0xF), false);
                                     chunk.setEmittedLight(x, y, z, schematic.getEmittedLight(interX, interY, czi + z));
                                 }
                             }

@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class SpigotCustomWorld extends CustomWorld {
@@ -99,8 +100,8 @@ public class SpigotCustomWorld extends CustomWorld {
         if (!worldHandler.isWorldCreated())
             worldHandler.createWorld(this, name);
 
-        for(int x = 0; x < sizeChunksX; x++) {
-            for(int z = 0; z < sizeChunksZ; z++) {
+        for (int x = 0; x < sizeChunksX; x++) {
+            for (int z = 0; z < sizeChunksZ; z++) {
                 this.asyncWorld.getChunk(x, z);
             }
         }
@@ -138,7 +139,7 @@ public class SpigotCustomWorld extends CustomWorld {
 
     private String getMask(short s) {
         StringBuilder builder = new StringBuilder();
-        for(int i = 15; i >= 0; i--) {
+        for (int i = 15; i >= 0; i--) {
             builder.append(s >>> i & 1);
         }
         return builder.toString();
@@ -149,6 +150,8 @@ public class SpigotCustomWorld extends CustomWorld {
         if (!startedCreation.compareAndSet(false, true))
             throw new RuntimeException("World already created!");
 
+        long ms = System.currentTimeMillis();
+
         Map<Long, CustomWorldChunkSnap> chunkSnapMap = new ConcurrentHashMap<>(); //I don't think this needs to be a concurrent hashmap but just in case
         world.getChunks().forEach(c -> chunkSnapMap.put(((long) c.getX() << 32) | ((long) c.getZ()), c));
 
@@ -158,36 +161,68 @@ public class SpigotCustomWorld extends CustomWorld {
         if (!worldHandler.isWorldCreated())
             worldHandler.createWorld(this, name);
 
-        for(int x = 0; x < sizeChunksX; x++) {
-            for(int z = 0; z < sizeChunksZ; z++) {
+        CompletableFuture<Void> addFuture = new CompletableFuture<>();
+        AtomicBoolean finishedGeneration = new AtomicBoolean(false);
+
+
+        //I realize now this is a very overly complicated way of adding to world list, but I'm too lazy to change it
+        if (!Bukkit.isPrimaryThread()) {
+            AtomicReference<Runnable> r = new AtomicReference<>();
+            r.set(() -> {
+                if(finishedGeneration.get()) {
+                    worldHandler.addToWorldList();
+                    addFuture.complete(null);
+                } else {
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            r.get().run();
+                        }
+                    }.runTask(plugin);
+                }
+            });
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    r.get().run();
+                }
+            }.runTask(plugin);
+        }
+
+        ms = System.currentTimeMillis();
+
+        for (int x = 0; x < sizeChunksX; x++) {
+            for (int z = 0; z < sizeChunksZ; z++) {
                 this.asyncWorld.getChunk(x, z);
             }
         }
+
+        ms = System.currentTimeMillis();
+
 
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()); //Multi-threaded
         List<CustomWorldAsyncChunk<?>> chunks = asyncWorld.getChunkMap().getCachedCopy(); //DO NOT CLEAR THE CHUNK MAP because they're 1 time creation chunks
         //that hold the nms chunks
         chunks.forEach((c) -> pool.submit(() -> {
-            c.fromSnap(chunkSnapMap.get(((long) c.getLoc().getX() << 32) | ((long) c.getLoc().getZ())));
+            CustomWorldChunkSnap snap = chunkSnapMap.get(((long) c.getLoc().getX() << 32) | ((long) c.getLoc().getZ()));
+            if (snap != null)
+                c.fromSnap(snap);
             worldHandler.finishChunk(c);
         })); //Submit tasks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
 
+        finishedGeneration.set(true);
+
+        ms = System.currentTimeMillis();
 
         //Add to world list (Must be sync)
-        if (!Bukkit.isPrimaryThread()) {
-            CompletableFuture<Void> future = new CompletableFuture<>();
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    worldHandler.addToWorldList();
-                    future.complete(null);
-                }
-            }.runTask(plugin);
-            future.join();
-        } else {
+        if (Bukkit.isPrimaryThread()) {
             worldHandler.addToWorldList();
+        } else {
+            addFuture.join();
         }
+
+        ms = System.currentTimeMillis();
 
         loaded.set(true);
     }

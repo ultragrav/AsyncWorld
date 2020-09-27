@@ -166,43 +166,47 @@ public class CustomWorldChunkSnap implements GravSerializable {
     }
 
     public static CustomWorldChunkSnap fromAsyncChunk(AsyncChunk chunk, Function<Runnable, CompletableFuture<Void>> syncExecutor) {
+        try {
+            //Sync
+            AtomicReference<List<TagCompound>> tiles = new AtomicReference<>();
+            AtomicReference<List<TagCompound>> entities = new AtomicReference<>();
+            Runnable runnable = () -> {
+                tiles.set(chunk.syncGetTiles());
+                entities.set(chunk.syncGetEntities());
+            };
 
-        //Sync
-        AtomicReference<List<TagCompound>> tiles = new AtomicReference<>();
-        AtomicReference<List<TagCompound>> entities = new AtomicReference<>();
-        Runnable runnable = () -> {
-            tiles.set(chunk.syncGetTiles());
-            entities.set(chunk.syncGetEntities());
-        };
+            CompletableFuture<Void> f = new CompletableFuture<>();
+            if (Bukkit.isPrimaryThread()) {
+                runnable.run();
+                f.complete(null);
+            } else {
+                f = syncExecutor.apply(runnable);
+            }
 
-        CompletableFuture<Void> f = new CompletableFuture<>();
-        if (Bukkit.isPrimaryThread()) {
-            runnable.run();
-            f.complete(null);
-        } else {
-            f = syncExecutor.apply(runnable);
+            //Possibly async
+            int[] heightMap = chunk.syncGetHeightMap();
+            byte[] biomes = chunk.syncGetBiomes();
+            byte[][] blocks = new byte[16][], blockData = new byte[16][], emittedLight = new byte[16][], skyLight = new byte[16][];
+            short sectionBitMask = chunk.getSectionBitMask();
+            for (int i = 0; i < 16; i++) {
+                if (((sectionBitMask >>> i) & 1) == 0)
+                    continue;
+
+                byte[] blocksS = blocks[i] = new byte[4096];
+                byte[] blockDataS = blockData[i] = new byte[2048];
+                chunk.syncGetBlocksAndData(blocksS, blockDataS, i);
+                emittedLight[i] = chunk.syncGetEmittedLight(i);
+                skyLight[i] = chunk.syncGetSkyLight(i);
+            }
+
+            f.join();
+            CustomWorldChunkSnap snap = new CustomWorldChunkSnap(heightMap, emittedLight, skyLight, blocks, blockData, biomes, entities.get(), tiles.get(), sectionBitMask);
+            snap.setX(chunk.getLoc().getX());
+            snap.setZ(chunk.getLoc().getZ());
+            return snap;
+        } catch(Throwable t) {
+            t.printStackTrace();
+            throw t;
         }
-
-        //Possibly async
-        int[] heightMap = chunk.syncGetHeightMap();
-        byte[] biomes = chunk.syncGetBiomes();
-        byte[][] blocks = new byte[16][], blockData = new byte[16][], emittedLight = new byte[16][], skyLight = new byte[16][];
-        short sectionBitMask = chunk.getSectionBitMask();
-        for(int i = 0; i < 16; i++) {
-            if (((sectionBitMask >>> i) & 1) == 0)
-                continue;
-
-            byte[] blocksS = blocks[i] = new byte[4096];
-            byte[] blockDataS = blockData[i] = new byte[2048];
-            chunk.syncGetBlocksAndData(blocksS, blockDataS, i);
-            emittedLight[i] = chunk.syncGetEmittedLight(i);
-            skyLight[i] = chunk.syncGetSkyLight(i);
-        }
-
-        f.join();
-        CustomWorldChunkSnap snap = new CustomWorldChunkSnap(heightMap, emittedLight, skyLight, blocks, blockData, biomes, entities.get(), tiles.get(), sectionBitMask);
-        snap.setX(chunk.getLoc().getX());
-        snap.setZ(chunk.getLoc().getZ());
-        return snap;
     }
 }

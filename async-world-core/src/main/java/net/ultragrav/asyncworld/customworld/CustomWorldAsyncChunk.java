@@ -15,14 +15,14 @@ public abstract class CustomWorldAsyncChunk<T> extends AsyncChunk {
 
     @Override
     protected synchronized void writeBlock(int section, int index, int combinedBlockId, boolean addTile) {
-        this.setBlock(section, index, combinedBlockId, addTile);
+        this.setBlock(getLX(index), (section << 4) + getLY(index), getLZ(index), combinedBlockId, addTile);
     }
 
     public synchronized void writeBlock(int x, int y, int z, int combinedBlockId, boolean addTile) {
-        this.writeBlock(y >> 4, getCombinedLoc(x, y & 15, z), combinedBlockId, addTile);
+        this.setBlock(x, y, z, combinedBlockId, addTile);
     }
 
-    public abstract void setBlock(int section, int index, int combinedBlockId, boolean addTile);
+    public abstract void setBlock(int x, int y, int z, int combinedBlockId, boolean addTile);
 
     public abstract void awaitFinish();
     public abstract void fromSnap(CustomWorldChunkSnap snap);

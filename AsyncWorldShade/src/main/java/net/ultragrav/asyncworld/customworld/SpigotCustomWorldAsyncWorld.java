@@ -52,7 +52,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
 
     protected CustomWorldAsyncChunk<?> getNewChunk(int cx, int cz) {
         int sV = SpigotCustomWorld.getServerVersionInt();
-        if(sV == 1) {
+        if (sV == 1) {
             return new CustomWorldAsyncChunk1_12(this, new ChunkLocation(this, cx, cz)); //TODO
         }
         throw new RuntimeException("Server version not supported!");
@@ -115,16 +115,23 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
                     int chunkMaxZ = Math.min(absMaxZ - czi, 15);
 
                     try {
-                        for (int x = chunkMinX; x <= chunkMaxX; x++) {
-                            for (int y = absMinY; y <= absMaxY; y++) {
+                        for (int y = absMinY; y <= absMaxY; y++) {
+                            int sy = y - posY;
+                            for (int x = chunkMinX; x <= chunkMaxX; x++) {
+                                int sx = cxi + x - posX;
                                 for (int z = chunkMinZ; z <= chunkMaxZ; z++) {
-                                    int block = schematic.getBlockAt(cxi + x - posX, y - posY, czi + z - posZ);
-                                    if (ignoreAir && block == 0)
-                                        continue;
+                                    int sz = czi + z - posZ;
+                                    int block = schematic.getBlockAt(sx, sy, sz);
                                     if (block == -1)
                                         continue;
-                                    chunk.writeBlock(x, y, z, block, false);
-                                    chunk.setEmittedLight(x, y, z, schematic.getEmittedLight(cxi + x - posX, y - posY, czi + z - posZ));
+                                    if (!ignoreAir || block != 0) {
+                                        chunk.setBlock(x, y, z, block, false);
+                                        chunk.setEmittedLight(x, y, z, schematic.getEmittedLight(sx, sy, sz));
+                                    } else {
+                                        int lighting = schematic.getEmittedLight(sx, sy, sz);
+                                        if (lighting != 0)
+                                            chunk.setEmittedLight(x, y, z, lighting);
+                                    }
                                 }
                             }
                         }
@@ -138,13 +145,14 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
                     runnable.run();
             }
 
+        IntVector3D finalPosition = position;
+        schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
+
         if (threads != 1) {
             while (!pool.isQuiescent()) {
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
             }
         }
-        IntVector3D finalPosition = position;
-        schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
     }
 
     public void pasteSchematic(Schematic schematic, IntVector3D position) {

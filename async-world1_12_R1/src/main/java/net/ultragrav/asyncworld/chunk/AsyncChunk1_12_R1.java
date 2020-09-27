@@ -8,6 +8,7 @@ import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
+import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -42,11 +43,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     private void validateCachedChunk() {
-        if(nmsCachedChunk == null) {
-            if(!getParent().getBukkitWorld().isChunkLoaded(this.getLoc().getX(), this.getLoc().getZ())) {
+        if (nmsCachedChunk == null) {
+            if (!getParent().getBukkitWorld().isChunkLoaded(this.getLoc().getX(), this.getLoc().getZ())) {
                 return;
             }
-            nmsCachedChunk = ((CraftChunk)getParent().getBukkitWorld().getChunkAt(this.getLoc().getX(), this.getLoc().getZ())).getHandle();
+            nmsCachedChunk = ((CraftChunk) getParent().getBukkitWorld().getChunkAt(this.getLoc().getX(), this.getLoc().getZ())).getHandle();
         }
     }
 
@@ -78,7 +79,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         optimizedSections[index] = palette;
     }
 
-    public void setCount(int tickingBlockCount, int nonEmptyBlockCount, ChunkSection section) throws NoSuchFieldException, IllegalAccessException {
+    public static void setCount(int tickingBlockCount, int nonEmptyBlockCount, ChunkSection section) throws NoSuchFieldException, IllegalAccessException {
         fieldTickingBlockCount.set(section, tickingBlockCount);
         fieldNonEmptyBlockCount.set(section, nonEmptyBlockCount);
     }
@@ -116,6 +117,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         getTiles().forEach((intVector3D, te) -> {
             BlockPosition bp = new BlockPosition(intVector3D.getX(), intVector3D.getY(), intVector3D.getZ());
             TileEntity entity = nmsChunk.getWorld().getTileEntity(bp); //Get or Create tile entity or null if none is applicable to the block at that position
+
             if (entity != null) {
                 //Set Tile Entity's Coordinates in it's NBT
                 te.getData().put("x", new TagInt(bp.getX()));
@@ -137,7 +139,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk == null)
             return 0;
         int sectionIndex = y >> 4;
-        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
         return nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
@@ -149,9 +151,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk == null)
             return 0;
         int sectionIndex = y >> 4;
-            if (nmsCachedChunk.getSections()[sectionIndex] == null) {
-                return 0;
-            }
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
         return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
     }
 
@@ -161,7 +163,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk == null)
             return 0;
         int sectionIndex = y >> 4;
-        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
         IBlockData data = nmsCachedChunk.getSections()[sectionIndex].getBlocks().a(x, y & 15, z);
@@ -174,7 +176,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk == null)
             return;
         int sectionIndex = y >> 4;
-        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
         }
         nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
@@ -186,7 +188,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk == null)
             return;
         int sectionIndex = y >> 4;
-        if(nmsCachedChunk.getSections()[sectionIndex] == null) {
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
         }
         nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
@@ -200,7 +202,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         nmsCachedChunk.getTileEntities().forEach((p, t) -> {
             if (t == null)
                 return;
-           list.add(fromNMSCompound(t.save(new NBTTagCompound())));
+            list.add(fromNMSCompound(t.save(new NBTTagCompound())));
         });
         return list;
     }
@@ -208,13 +210,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override //Not async safe
     public List<TagCompound> syncGetEntities() {
         List<TagCompound> out = new ArrayList<>();
-        for(int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
-            if(nmsCachedChunk.getEntitySlices()[i] == null)
+        for (int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
+            if (nmsCachedChunk.getEntitySlices()[i] == null)
                 continue;
-            for(Entity entity : nmsCachedChunk.getEntitySlices()[i]) {
+            for (Entity entity : nmsCachedChunk.getEntitySlices()[i]) {
                 //All entities in the i-th section
                 NBTTagCompound nmsCompound = new NBTTagCompound();
-                if(entity.d(nmsCompound)) {
+                if (entity.d(nmsCompound)) {
                     TagCompound compound = fromNMSCompound(nmsCompound);
                     out.add(compound);
                 }
@@ -234,10 +236,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public void syncGetBlocksAndData(byte[] blocks, byte[] data, int section) {
-        if(data.length < 2048 || blocks.length < 4096)
+        if (data.length < 2048 || blocks.length < 4096)
             return;
         ChunkSection sect = getNmsChunk().getSections()[section];
-        if(sect == null)
+        if (sect == null)
             return;
 
         sect.getBlocks().exportData(blocks, new NibbleArray(data));
@@ -247,7 +249,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     public byte[] syncGetEmittedLight(int section) {
         Chunk chunk = getNmsChunk();
         ChunkSection sect = chunk.getSections()[section];
-        if(sect == null)
+        if (sect == null)
             return null;
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getEmittedLightArray().asBytes(), 0, arr, 0, arr.length);
@@ -258,7 +260,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     public byte[] syncGetSkyLight(int section) {
         Chunk chunk = getNmsChunk();
         ChunkSection sect = chunk.getSections()[section];
-        if(sect == null)
+        if (sect == null)
             return null;
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
@@ -269,8 +271,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     public short getSectionBitMask() {
         ChunkSection[] sections = getNmsChunk().getSections();
         short mask = 0;
-        for(int i = 0; i < 16; i++) {
-            if(sections[i] !=  null) {
+        for (int i = 0; i < 16; i++) {
+            if (sections[i] != null) {
                 mask |= 1 << i;
             }
         }
@@ -368,7 +370,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             boolean completelyEdited = section == null;
             if (!completelyEdited) {
                 completelyEdited = true;
-                for (long l : guChunkSection.edited) {
+                long[] edited = guChunkSection.edited;
+                for (long l : edited) {
                     if (l != -1L) {
                         completelyEdited = false;
                         break;
@@ -383,12 +386,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
                 if (optimizedSections[sectionIndex] != null) {
                     try {
-                        if(airCount[sectionIndex] == 4096) {
+                        if (airCount[sectionIndex] == 4096) {
                             sections[sectionIndex] = null;
                         } else {
                             setPalette(section, optimizedSections[sectionIndex]); //Set palette
                             setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
-                            Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
                         }
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
@@ -419,21 +421,21 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 }
 
                 section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
-                if(!completelyEdited) {
+                if (!completelyEdited) {
                     int index = i;
                     int part = index & 1;
                     index >>>= 1;
                     int emittedLight = (guChunkSection.emittedLight[index] >>> (part * 4) & 0xF);
                     section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
-                    section.getSkyLightArray().a(lx, ly, lz, 0xF);
                 }
 
                 //Remove tile entity
-                if(!noTiles) {
+                if (!noTiles) {
                     BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
                     TileEntity te = nmsChunk.getTileEntities().get(position);
-                    if (te != null)
+                    if (te != null) {
                         tilesToRemove.put(position, te);
+                    }
                 }
             }
             if (air == 4096) {
@@ -449,12 +451,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 chunkBiomes[i] = biomes[i];
         Arrays.fill(biomes, (byte) -1);
 
-        //Rem more tiles
-        if(remMask != 0) {
+        //Rem more tiles (from completely edited sections)
+        if (remMask != 0) {
             int finalRemMask = remMask;
             nmsChunk.getTileEntities().forEach((p, t) -> {
-                if((finalRemMask & (1 << (p.getY() >> 4))) != 0) {
-                    tilesToRemove.put(p, t);
+                if ((finalRemMask & (1 << (p.getY() >> 4))) != 0) {
+                    if (t != null)
+                        tilesToRemove.put(p, t);
                 }
             });
         }
@@ -490,7 +493,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 continue;
             }
 
-            for(int i = 0; i < 4096; i++) {
+            for (int i = 0; i < 4096; i++) {
                 int x = getLX(i);
                 int y = getLY(i);
                 int z = getLZ(i);

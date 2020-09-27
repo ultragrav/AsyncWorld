@@ -84,7 +84,10 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                     }
                 }
             }
-            world = (CustomWorldServer1_12) new CustomWorldServer1_12(dataManager, dimension).b(); //Instantiating world calls bukkitServer.addWorld(this)
+            safetyLock.unlock();
+            world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
+            safetyLock.lock();
+            world.b();
         } catch(Exception e) {
             throw new RuntimeException(e);
         } finally {

@@ -16,6 +16,12 @@ import java.util.List;
 import java.util.Map;
 
 public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer> {
+
+    private static final byte[] maxFilledSkyLight = new byte[2048];
+    static {
+        Arrays.fill(maxFilledSkyLight, (byte) 0xFF);
+    }
+
     public CustomWorldAsyncChunk1_12(AsyncWorld parent, ChunkLocation loc) {
         super(parent, loc);
         Arrays.fill(biomes, (byte) 1);
@@ -24,6 +30,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     private Chunk nmsStoredChunk;
     private volatile boolean finished = false;
     private final ChunkSection[] sections = new ChunkSection[16];
+    private final int[] nonAirCounts = new int[16];
+    private final int[] heightMap = new int[256];
+    private boolean dirtyHeightMap = false;
 
     @Override
     public synchronized void setEmittedLight(int x, int y, int z, int value) {
@@ -70,14 +79,33 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     }
 
     @Override
-    public synchronized void setBlock(int sectionIndex, int index, int block, boolean addTile) {
+    public synchronized void setBlock(int x, int y, int z, int block, boolean addTile) {
+        int sectionIndex = y >> 4;
         ChunkSection section = sections[sectionIndex];
         if (section == null) {
+            if (block == 0)
+                return;
             section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
         }
-        int x = getLX(index), y = getLY(index), z = getLZ(index);
-        section.getSkyLightArray().a(x, y, z, 15);
-        section.getBlocks().setBlock(x, y, z, Block.getByCombinedId(block));
+
+        IBlockData blockData = Block.getByCombinedId(block);
+        section.getBlocks().setBlock(x, y & 15, z, blockData);
+
+        //Block counts
+        if (block != 0) {
+            nonAirCounts[sectionIndex]++;
+        }
+
+        //Height map
+        if (!dirtyHeightMap && blockData.c() != 0) {
+            int current = heightMap[z << 4 | x];
+            if (y > current)
+                heightMap[z << 4 | x] = y;
+        } else if (!dirtyHeightMap) {
+            if (y == heightMap[x << 4 | x])
+                dirtyHeightMap = true;
+        }
+
         this.editedSections |= 1 << sectionIndex;
         if (addTile && hasTileEntity(block & 0xFFF)) {
             setTileEntity(x, y + (sectionIndex << 4), z, new TagCompound());
@@ -114,11 +142,10 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         chunk.e(true);
         chunk.d(true);
 
-        System.arraycopy(snap.getHeightMap(), 0, chunk.heightMap, 0, chunk.heightMap.length); //Height map
         this.biomes = snap.getBiomes(); //Biomes
         snap.getTiles().forEach(t -> { //Tiles
             TileEntity tile = TileEntity.create(chunk.getWorld(), AsyncChunk1_12_R1.fromGenericCompound(t));
-            if(tile != null)
+            if (tile != null)
                 chunk.a(tile);
         });
 
@@ -136,7 +163,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             Map<String, Tag> map = tag.getData();
 
             if (map.containsKey("Passengers")) {
-                List<Tag> passengersList = ((TagList)map.get("Passengers")).getData();
+                List<Tag> passengersList = ((TagList) map.get("Passengers")).getData();
 
                 for (Tag passengerTag : passengersList) {
                     Entity passenger = loadEntity((TagCompound) passengerTag, world, chunk);
@@ -154,7 +181,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override
     public synchronized void fromSnap(CustomWorldChunkSnap snap) {
         ChunkSection[] sects;
-        if(nmsStoredChunk != null) {
+        if (nmsStoredChunk != null) {
             //Replace existing
             nmsStoredChunk = new Chunk(nmsStoredChunk.world, this.getLoc().getX(), this.getLoc().getZ());
             sects = nmsStoredChunk.getSections();
@@ -166,8 +193,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         }
 
         short mask = snap.getSectionBitMask();
-        for(int i = 0; i < 16; i++) {
-            if(((mask >>> i) & 1) == 0)
+        for (int i = 0; i < 16; i++) {
+            if (((mask >>> i) & 1) == 0)
                 continue;
 
             ChunkSection section = sects[i] = new ChunkSection(i << 4, true);
@@ -176,9 +203,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             section.a(new NibbleArray(snap.getEmittedLight()[i])); //Emitted light
 
             section.getBlocks().a(snap.getBlocks()[i], new NibbleArray(snap.getBlockData()[i]), null); //Blocks
-
-            //Block counts are calculated in finish()
         }
+
+        System.arraycopy(snap.getHeightMap(), 0, heightMap, 0, heightMap.length); //Height map
     }
 
     public synchronized void finish(WorldServer server) {
@@ -190,14 +217,41 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
             nmsChunk.a(sections); //Set the blocks
 
-            if(this.cachedSnap != null) {
+            //Block counts
+            if (this.cachedSnap != null) {
+                //Snap
                 fromSnap2(nmsStoredChunk, cachedSnap);
+
+                //Block counts
+                for (ChunkSection section : sections) {
+                    if (section == null)
+                        continue;
+                    section.recalcBlockCounts();
+                }
+            } else {
+
+                //Block counts
+                for (int i = 0, sectionsLength = sections.length; i < sectionsLength; i++) {
+                    ChunkSection section = sections[i];
+                    if (section == null)
+                        continue;
+
+                    //Default skylighting
+                    System.arraycopy(maxFilledSkyLight, 0, section.getSkyLightArray().asBytes(), 0, 2048);
+
+                    try {
+                        AsyncChunk1_12_R1.setCount(0, nonAirCounts[i], section);
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
-            for (ChunkSection section : sections) {
-                if (section == null)
-                    continue;
-                section.recalcBlockCounts();
+            //Heightmap
+            if (!dirtyHeightMap) {
+                System.arraycopy(heightMap, 0, nmsStoredChunk.heightMap, 0, nmsStoredChunk.heightMap.length);
+            } else {
+                nmsStoredChunk.initLighting();
             }
 
             //Tile Entities
@@ -230,11 +284,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             });
 
             this.flushBiomes();
-            if(getEditedSections() != 0) //No blocks edited, or loaded from chunk snap -> which contains lighting already
-                nmsChunk.initLighting();
+            if (getEditedSections() != 0) //No blocks edited, or loaded from chunk snap -> which contains lighting already
+                // nmsChunk.initLighting();
 
-            this.cachedSnap = null;
-        } catch(Throwable e) {
+                this.cachedSnap = null;
+        } catch (Throwable e) {
             e.printStackTrace();
             throw e;
         } finally {
@@ -310,13 +364,13 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     @Override //Not async safe
     public List<TagCompound> syncGetEntities() {
         List<TagCompound> out = new ArrayList<>();
-        for(int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
-            if(getNmsChunk().getEntitySlices()[i] == null)
+        for (int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
+            if (getNmsChunk().getEntitySlices()[i] == null)
                 continue;
-            for(Entity entity : getNmsChunk().getEntitySlices()[i]) {
+            for (Entity entity : getNmsChunk().getEntitySlices()[i]) {
                 //All entities in the i-th section
                 NBTTagCompound nmsCompound = new NBTTagCompound();
-                if(entity.d(nmsCompound)) {
+                if (entity.d(nmsCompound)) {
                     TagCompound compound = AsyncChunk1_12_R1.fromNMSCompound(nmsCompound);
                     out.add(compound);
                 }
@@ -336,10 +390,10 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
     @Override
     public void syncGetBlocksAndData(byte[] blocks, byte[] data, int section) {
-        if(data.length < 2048 || blocks.length < 4096)
+        if (data.length < 2048 || blocks.length < 4096)
             return;
         ChunkSection sect = getNmsChunk().getSections()[section];
-        if(sect == null)
+        if (sect == null)
             return;
 
         sect.getBlocks().exportData(blocks, new NibbleArray(data));
@@ -349,7 +403,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     public byte[] syncGetEmittedLight(int section) {
         Chunk chunk = getNmsChunk();
         ChunkSection sect = chunk.getSections()[section];
-        if(sect == null)
+        if (sect == null)
             return null;
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getEmittedLightArray().asBytes(), 0, arr, 0, arr.length);
@@ -360,7 +414,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     public byte[] syncGetSkyLight(int section) {
         Chunk chunk = getNmsChunk();
         ChunkSection sect = chunk.getSections()[section];
-        if(sect == null)
+        if (sect == null)
             return null;
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
@@ -371,8 +425,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     public short getSectionBitMask() {
         ChunkSection[] sections = getNmsChunk().getSections();
         short mask = 0;
-        for(int i = 0; i < 16; i++) {
-            if(sections[i] != null) {
+        for (int i = 0; i < 16; i++) {
+            if (sections[i] != null) {
                 mask |= 1 << i;
             }
         }
@@ -386,6 +440,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         System.arraycopy(chunk.getBiomeIndex(), 0, arr, 0, arr.length);
         return arr;
     }
+
     @Override
     public void loadTiles() {
 
