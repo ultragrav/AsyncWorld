@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 public abstract class CustomWorld {
     public abstract String getName();
     public abstract World getBukkitWorld();
+    public abstract boolean isWorldCreated();
     public abstract void create(Consumer<CustomWorldAsyncWorld> generator);
     public abstract void create(SavedCustomWorld world);
     public abstract CustomWorldAsyncChunk<?> getChunk(int cx, int cz);

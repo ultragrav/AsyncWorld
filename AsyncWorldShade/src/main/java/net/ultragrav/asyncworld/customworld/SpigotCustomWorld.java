@@ -294,6 +294,11 @@ public class SpigotCustomWorld extends CustomWorld {
     }
 
     @Override
+    public boolean isWorldCreated() {
+        return this.worldHandler.isWorldCreated();
+    }
+
+    @Override
     public CustomWorldAsyncChunk<?> getChunk(int cx, int cz) {
         if (cx < 0 || cz < 0 || cx > sizeChunksX || cz > sizeChunksZ) {
             return null;
