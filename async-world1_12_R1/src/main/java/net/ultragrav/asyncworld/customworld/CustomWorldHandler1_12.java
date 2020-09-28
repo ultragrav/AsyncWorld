@@ -84,10 +84,12 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                     }
                 }
             }
-            safetyLock.unlock();
-            world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
-            safetyLock.lock();
-            world.b();
+            synchronized (this) {
+                safetyLock.unlock();
+                world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
+                safetyLock.lock();
+                world.b();
+            }
         } catch(Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -124,12 +126,12 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
     }
 
     @Override
-    public boolean isWorldCreated() {
+    public synchronized boolean isWorldCreated() {
         return world != null;
     }
 
     @Override
-    public World getBukkitWorld() {
+    public synchronized World getBukkitWorld() {
         return world == null ? null : world.getWorld();
     }
 }
