@@ -303,6 +303,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public abstract byte[] syncGetSkyLight(int section);
     public abstract short getSectionBitMask();
     public abstract byte[] syncGetBiomes();
+    public abstract boolean sectionExists(int section);
 
     public abstract void loadTiles();
 

@@ -112,6 +112,13 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         }
     }
 
+    @Override
+    public boolean sectionExists(int section) {
+        if(getNmsChunk() == null)
+            return false;
+        return getNmsChunk().getSections()[section] != null;
+    }
+
     public synchronized void setBiome(int biome) {
         Arrays.fill(biomes, (byte) biome);
         this.flushBiomes();

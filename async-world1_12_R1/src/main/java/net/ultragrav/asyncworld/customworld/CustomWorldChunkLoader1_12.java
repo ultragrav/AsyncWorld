@@ -16,8 +16,9 @@ public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
     @Override
     public Chunk a(World nmsWorld, int x, int z) {
         CustomWorldAsyncChunk1_12 c = ((CustomWorldAsyncChunk1_12)customWorld.getChunk(x, z));
-        if(c == null)
+        if(c == null) {
             return null;
+        }
         Chunk chunk = c.getStoredChunk();
         chunk.d(true);
         chunk.e(true);

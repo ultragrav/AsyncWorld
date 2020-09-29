@@ -195,6 +195,19 @@ public class NMSRelighter implements Relighter {
         return chunk.syncGetBrightnessOpacity(x, y, z) & 15;
     }
 
+    private int getSkyLightForRelighting(AsyncWorld world, int x, int y, int z) {
+        int cx = x >> 4;
+        int cz = z >> 4;
+        AsyncChunk chunk = world.getChunk(cx, cz);
+        int skyLight = world.syncGetSkyLight(x, y, z);
+        if(skyLight != 0)
+            return skyLight;
+        if(!chunk.sectionExists(y >> 4)) {
+            return 15;
+        }
+        return 0;
+    }
+
     private void smoothSkyLight(QueuedRelight chunk, int y, boolean direction) {
         int[] mask = chunk.current;
         final int bx = chunk.chunk.getLoc().getX() << 4;
@@ -208,8 +221,8 @@ public class NMSRelighter implements Relighter {
                     continue;
                 }
                 int value = mask[j];
-                if ((value = Math.max(chunk.chunk.getParent().syncGetSkyLight(bx + x - 1, y, bz + z) - 1, value)) >= 14) ;
-                else if ((value = Math.max(chunk.chunk.getParent().syncGetSkyLight(bx + x, y, bz + z - 1) - 1, value)) >= 14) ;
+                if ((value = Math.max(getSkyLightForRelighting(chunk.chunk.getParent(), bx + x - 1, y, bz + z) - 1, value)) >= 14) ;
+                else if ((value = Math.max(getSkyLightForRelighting(chunk.chunk.getParent(),bx + x, y, bz + z - 1) - 1, value)) >= 14) ;
                 if (value > mask[j]) chunk.chunk.syncSetSkyLight(x, y, z, mask[j] = value);
             }
         } else {
@@ -220,8 +233,8 @@ public class NMSRelighter implements Relighter {
                     continue;
                 }
                 int value = mask[j];
-                if ((value = (byte) Math.max(chunk.chunk.getParent().syncGetSkyLight(bx + x + 1, y, bz + z) - 1, value)) >= 14) ;
-                else if ((value = (byte) Math.max(chunk.chunk.getParent().syncGetSkyLight(bx + x, y, bz + z + 1) - 1, value)) >= 14) ;
+                if ((value = (byte) Math.max(getSkyLightForRelighting(chunk.chunk.getParent(),bx + x + 1, y, bz + z) - 1, value)) >= 14) ;
+                else if ((value = (byte) Math.max(getSkyLightForRelighting(chunk.chunk.getParent(),bx + x, y, bz + z + 1) - 1, value)) >= 14) ;
                 if (value > mask[j]) chunk.chunk.syncSetSkyLight(x, y, z, mask[j] = value);
             }
         }

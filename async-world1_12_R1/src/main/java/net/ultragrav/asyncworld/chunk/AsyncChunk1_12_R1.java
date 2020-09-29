@@ -280,6 +280,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     @Override
+    public boolean sectionExists(int section) {
+        if(getNmsChunk() == null)
+            return false;
+        return getNmsChunk().getSections()[section] != null;
+    }
+
+    @Override
     public byte[] syncGetBiomes() {
         Chunk chunk = getNmsChunk();
         byte[] arr = new byte[chunk.getBiomeIndex().length];
