@@ -195,14 +195,14 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     @Override
-    public List<TagCompound> syncGetTiles() {
+    public Map<IntVector3D, TagCompound> syncGetTiles() {
         validateCachedChunk();
-        List<TagCompound> list = new ArrayList<>();
+        Map<IntVector3D, TagCompound> list = new HashMap<>();
 
         nmsCachedChunk.getTileEntities().forEach((p, t) -> {
             if (t == null)
                 return;
-            list.add(fromNMSCompound(t.save(new NBTTagCompound())));
+            list.put(new IntVector3D(p.getX(), p.getY(), p.getZ()), fromNMSCompound(t.save(new NBTTagCompound())));
         });
         return list;
     }

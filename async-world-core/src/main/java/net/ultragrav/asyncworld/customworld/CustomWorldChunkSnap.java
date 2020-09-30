@@ -171,7 +171,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
             AtomicReference<List<TagCompound>> tiles = new AtomicReference<>();
             AtomicReference<List<TagCompound>> entities = new AtomicReference<>();
             Runnable runnable = () -> {
-                tiles.set(chunk.syncGetTiles());
+                tiles.set(new ArrayList<>(chunk.syncGetTiles().values()));
                 entities.set(chunk.syncGetEntities());
             };
 

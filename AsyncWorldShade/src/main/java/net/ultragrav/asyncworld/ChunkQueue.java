@@ -135,6 +135,8 @@ public class ChunkQueue implements Listener {
                 lastGC = System.currentTimeMillis();
             }
         }
+
+        System.out.println("Updated " + callbacks.size() + " chunks");
         return callbacks;
     }
 
@@ -162,7 +164,11 @@ public class ChunkQueue implements Listener {
             this.update(queue, listLock, WORK_TIME_PER_TICK_MS).forEach(c -> {
                 if (c == null)
                     return;
-                c.run();
+                try {
+                    c.run();
+                } catch(Throwable t) {
+                    t.printStackTrace();
+                }
             });
         }, 1, 1);
     }

@@ -172,7 +172,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
     @Override
     public void setBlocks(CuboidRegion region, Supplier<Short> blockSupplier) {
         //small edit
-        List<AsyncChunk> edited = new ArrayList<>();
         for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getX(); x++) {
             for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getZ(); z++) {
                 AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
@@ -180,8 +179,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     int block = blockSupplier.get();
                     currentChunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
                 }
-                if (!edited.contains(currentChunk))
-                    edited.add(currentChunk);
             }
         }
     }
@@ -193,92 +190,12 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<Vector3D, Integer, TagCompound> action, boolean multiThread) {
-        if (!Bukkit.isPrimaryThread()) {
-            Bukkit.getLogger().info("Called syncForAllInRegion from asynchronous thread!");
-            return;
-        }
-        if (region == null)
-            return;
-
-        long ms = System.currentTimeMillis();
-        this.syncFastRefreshChunksInRegion(region, 100000);
-
-        int threads = Runtime.getRuntime().availableProcessors();
-
-        if (threads == 1 || !multiThread) {
-            for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
-                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
-                    AsyncChunk chunk = getChunk(x >> 4, z >> 4);
-                    if (!chunk.isChunkLoaded())
-                        chunk.getBukkitChunk().load(true);
-                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
-                        int block = chunk.readBlock(x & 15, y, z & 15);
-                        action.accept(new Vector3D(x, y, z), block, chunk.getTile(x & 15, y, z & 15));
-                    }
-                }
-            }
-        } else {
-            List<AsyncChunk> chunks = new ArrayList<>();
-
-            Vector3D max = region.getMaximumPoint();
-            Vector3D min = region.getMinimumPoint();
-            int minI = min.getBlockX() >> 4;
-            int minJ = min.getBlockZ() >> 4;
-            int maxI = max.getBlockX() >> 4;
-            int maxJ = max.getBlockZ() >> 4;
-
-            for (int i = minI; i <= maxI; i++)
-                for (int j = minJ; j <= maxJ; j++)
-                    chunks.add(getChunk(i, j));
-            int minBlockY = min.getBlockY();
-            int minBlockX = min.getBlockX();
-            int minBlockZ = min.getBlockZ();
-            int maxBlockY = max.getBlockY();
-            int maxBlockX = max.getBlockX();
-            int maxBlockZ = max.getBlockZ();
-
-            Iterator<AsyncChunk> it = chunks.iterator();
-            List<Future<Void>> futures = new ArrayList<>();
-            ms = System.currentTimeMillis();
-            while (it.hasNext()) {
-                for (int i = 0; i < threads && it.hasNext(); i++) {
-                    AsyncChunk chunk = it.next();
-                    chunk.getBukkitChunk().load(true);
-                    futures.add(executor.submit(() -> {
-                        int bx = chunk.getLoc().getX() << 4;
-                        int bz = chunk.getLoc().getZ() << 4;
-                        for (int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
-                            for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
-                                for (int y = minBlockY; y <= maxBlockY; y++) {
-                                    int block = chunk.readBlock(x, y, z);
-                                    action.accept(new Vector3D(x + (chunk.getLoc().getX() << 4), y, z + (chunk.getLoc().getZ() << 4)), block, chunk.getTile(x, y, z));
-                                }
-                            }
-                        }
-                        return null;
-                    }));
-                }
-                futures.forEach(f -> {
-                    if (f == null)
-                        return;
-                    try {
-                        f.get();
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                });
-                futures.clear();
-            }
-        }
-    }
-
-    @Override
-    public void asyncForAllInRegion(CuboidRegion region, AsyncWorldQuadConsumer<Vector3D, Integer, TagCompound, Integer> action, boolean multiThread) {
         boolean isSync = Bukkit.isPrimaryThread();
 
         CompletableFuture<Void> f = new CompletableFuture<>();
+        Map<IntVector3D, TagCompound> tiles = new HashMap<>();
         Runnable refresh = () -> {
-            syncFastRefreshChunksInRegion(region, 1000);
+            actionChunks(region, (c) -> tiles.putAll(c.syncGetTiles()), 1, true);
             f.complete(null);
         };
         if (isSync) {
@@ -321,9 +238,9 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 for (int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
                     for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                         for (int y = minBlockY; y <= maxBlockY; y++) {
-                            int block = chunk.readBlock(x, y, z);
-                            action.accept(new Vector3D(x + bx, y, z + bz), block, chunk.getTile(x, y, z),
-                                    chunk.getEmittedLight(x, y, z));
+                            int block = chunk.getCombinedBlockSync(x, y, z);
+                            Vector3D vec = new Vector3D(x + bx, y, z + bz);
+                            action.accept(vec, block, tiles.get(vec.asIntVector()));
                         }
                     }
                 }
@@ -336,9 +253,85 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
                     AsyncChunk chunk = getChunk(x >> 4, z >> 4);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
-                        int block = chunk.readBlock(x & 15, y, z & 15);
-                        action.accept(new Vector3D(x, y, z), block, chunk.getTile(x & 15, y, z & 15),
-                                chunk.getEmittedLight(x, y, z));
+                        int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
+                        Vector3D vec = new Vector3D(x, y, z);
+                        action.accept(vec, block, tiles.get(vec.asIntVector()));
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void asyncForAllInRegion(CuboidRegion region, AsyncWorldQuadConsumer<Vector3D, Integer, TagCompound, Integer> action, boolean multiThread) {
+        boolean isSync = Bukkit.isPrimaryThread();
+
+        CompletableFuture<Void> f = new CompletableFuture<>();
+        Map<IntVector3D, TagCompound> tiles = new HashMap<>();
+        Runnable refresh = () -> {
+            actionChunks(region, (c) -> tiles.putAll(c.syncGetTiles()), 1, true);
+            f.complete(null);
+        };
+        if (isSync) {
+            refresh.run();
+        } else {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    refresh.run();
+                }
+            }.runTask(chunkQueue.getPlugin());
+        }
+        f.join();
+
+        int threads = Runtime.getRuntime().availableProcessors();
+        if (multiThread) {
+            ForkJoinPool pool = new ForkJoinPool(threads);
+            List<AsyncChunk> chunks = new ArrayList<>();
+
+            Vector3D max = region.getMaximumPoint();
+            Vector3D min = region.getMinimumPoint();
+            int minI = min.getBlockX() >> 4;
+            int minJ = min.getBlockZ() >> 4;
+            int maxI = max.getBlockX() >> 4;
+            int maxJ = max.getBlockZ() >> 4;
+
+            for (int i = minI; i <= maxI; i++)
+                for (int j = minJ; j <= maxJ; j++)
+                    chunks.add(getChunk(i, j));
+            int minBlockY = min.getBlockY();
+            int minBlockX = min.getBlockX();
+            int minBlockZ = min.getBlockZ();
+            int maxBlockY = max.getBlockY();
+            int maxBlockX = max.getBlockX();
+            int maxBlockZ = max.getBlockZ();
+
+            chunks.forEach(chunk -> pool.submit(() -> {
+                int bx = chunk.getLoc().getX() << 4;
+                int bz = chunk.getLoc().getZ() << 4;
+                for (int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
+                    for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
+                        for (int y = minBlockY; y <= maxBlockY; y++) {
+                            int block = chunk.getCombinedBlockSync(x, y, z);
+                            Vector3D vec = new Vector3D(x + bx, y, z + bz);
+                            action.accept(vec, block, tiles.get(vec.asIntVector()),
+                                    chunk.syncGetEmittedLight(x, y, z));
+                        }
+                    }
+                }
+                return null;
+            }));
+            while (!pool.isQuiescent())
+                pool.awaitQuiescence(1, TimeUnit.SECONDS);
+        } else {
+            for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
+                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
+                    AsyncChunk chunk = getChunk(x >> 4, z >> 4);
+                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
+                        int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
+                        Vector3D vec = new Vector3D(x, y, z);
+                        action.accept(vec, block, tiles.get(vec.asIntVector()),
+                                chunk.syncGetEmittedLight(x, y, z));
                     }
                 }
             }
@@ -375,50 +368,59 @@ public class SpigotAsyncWorld extends AsyncWorld {
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         Runnable runnable = () -> {
-            List<AsyncChunk> edited;
-            synchronized (this) {
-                edited = chunkMap.getCachedCopy();
-                this.chunkMap.clear();
-            }
-
-            //Optimize
-            edited.forEach(c -> pool.submit(c::optimize));
-            while (true) if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
-
-            Map<AsyncChunk, Integer> masks = new HashMap<>();
-            for (AsyncChunk chunk : edited) {
-                int editedSections = chunk.getEditedSections();
-                for(int i = 0; i < 16; i++) {
-                    boolean a = ((editedSections >>> i) & 1) != 0;
-                    if(a && i != 0) {
-                        editedSections |= 1 << (i-1);
-                    }
-                    if(a && i != 15) {
-                        editedSections |= 1 << (i++ + 1);
-                    }
+            try {
+                List<AsyncChunk> edited;
+                synchronized (this) {
+                    edited = chunkMap.getCachedCopy();
+                    this.chunkMap.clear();
                 }
-                masks.put(chunk, editedSections);
-            }
-            //Queue
-            chunkQueue.queueChunks(edited, () -> {
-                edited.forEach(c -> {
-                    int mask = masks.get(c);
-                    Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
-                    for(int i = 0; i < 16; i++) {
-                        if((mask >>> i & 1) == 1) {
-                            actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
-                        } else {
-                            actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+
+                //Optimize
+                if(edited.size() >= 64) {
+                    edited.forEach(c -> pool.submit(c::optimize));
+                    while (true) if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
+                } else {
+                    edited.forEach(AsyncChunk::optimize);
+                }
+
+
+                Map<AsyncChunk, Integer> masks = new HashMap<>();
+                for (AsyncChunk chunk : edited) {
+                    int editedSections = chunk.getEditedSections();
+                    for (int i = 0; i < 16; i++) {
+                        boolean a = ((editedSections >>> i) & 1) != 0;
+                        if (a && i != 0) {
+                            editedSections |= 1 << (i - 1);
+                        }
+                        if (a && i != 15) {
+                            editedSections |= 1 << (i++ + 1);
                         }
                     }
-                    relighter.queueSkyRelight(c, actions);
-                }); //Schedule relighting
-                future.complete(null);
-            });
+                    masks.put(chunk, editedSections);
+                }
+                //Queue
+                chunkQueue.queueChunks(edited, () -> {
+                    edited.forEach(c -> {
+                        int mask = masks.get(c);
+                        Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
+                        for (int i = 0; i < 16; i++) {
+                            if ((mask >>> i & 1) == 1) {
+                                actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
+                            } else {
+                                actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                            }
+                        }
+                        relighter.queueSkyRelight(c, actions);
+                    }); //Schedule relighting
+                    future.complete(null);
+                });
+            } catch(Throwable t) {
+                t.printStackTrace();
+            }
         };
 
         if (Bukkit.isPrimaryThread()) {
-            pool.submit(runnable);
+            pool.execute(runnable);
         } else {
             runnable.run();
         }
@@ -617,7 +619,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
         }
-        System.out.println("Took " + (System.currentTimeMillis() - ms) + "ms to refresh chunks : " + chunks.size());
     }
 
     private static interface ActionBlockConsumer {

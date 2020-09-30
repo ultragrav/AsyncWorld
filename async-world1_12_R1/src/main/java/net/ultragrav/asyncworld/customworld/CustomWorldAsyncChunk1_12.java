@@ -8,12 +8,10 @@ import net.ultragrav.asyncworld.nbt.Tag;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.nbt.TagInt;
 import net.ultragrav.asyncworld.nbt.TagList;
+import net.ultragrav.utils.IntVector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer> {
 
@@ -357,13 +355,13 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     }
 
     @Override
-    public List<TagCompound> syncGetTiles() {
-        List<TagCompound> list = new ArrayList<>();
+    public Map<IntVector3D, TagCompound> syncGetTiles() {
+        Map<IntVector3D, TagCompound> list = new HashMap<>();
 
         getNmsChunk().getTileEntities().forEach((p, t) -> {
             if (t == null)
                 return;
-            list.add(AsyncChunk1_12_R1.fromNMSCompound(t.save(new NBTTagCompound())));
+            list.put(new IntVector3D(p.getX(), p.getY(), p.getZ()), AsyncChunk1_12_R1.fromNMSCompound(t.save(new NBTTagCompound())));
         });
         return list;
     }

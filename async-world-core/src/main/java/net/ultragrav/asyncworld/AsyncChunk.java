@@ -241,16 +241,13 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
     public synchronized void optimize() {
         for (int i = 0; i < chunkSections.length; i++) {
-            if (chunkSections[i] != null) {
-                boolean completelyEdited = true;
+            OUTER: if (chunkSections[i] != null) {
                 for (long l : chunkSections[i].edited) {
                     if (l != -1L) {
-                        completelyEdited = false;
-                        break;
+                        break OUTER;
                     }
                 }
-                if (completelyEdited)
-                    optimizeSection(i, chunkSections[i]);
+                optimizeSection(i, chunkSections[i]);
             }
         }
     }
@@ -295,7 +292,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public abstract int syncGetBrightnessOpacity(int x, int y, int z);
     public abstract void syncSetEmittedLight(int x, int y, int z, int value);
     public abstract void syncSetSkyLight(int x, int y, int z, int value);
-    public abstract List<TagCompound> syncGetTiles();
+    public abstract Map<IntVector3D, TagCompound> syncGetTiles();
     public abstract List<TagCompound> syncGetEntities();
     public abstract int[] syncGetHeightMap();
     public abstract void syncGetBlocksAndData(byte[] blocks, byte[] data, int section);
