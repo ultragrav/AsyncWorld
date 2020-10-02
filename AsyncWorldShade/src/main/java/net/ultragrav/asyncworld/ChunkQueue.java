@@ -136,7 +136,6 @@ public class ChunkQueue implements Listener {
             }
         }
 
-        System.out.println("Updated " + callbacks.size() + " chunks");
         return callbacks;
     }
 
