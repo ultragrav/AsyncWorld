@@ -36,12 +36,9 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
         ((CustomWorldAsyncChunk1_12)chunk).finish(world);
     }
 
-    private CustomWorld customWorld = null;
-
     @Override
     @SuppressWarnings("unchecked")
     public void createWorld(CustomWorld customWorld, String name) {
-        this.customWorld = customWorld;
         CustomWorldDataManager1_12 dataManager = new CustomWorldDataManager1_12(customWorld);
 
         //This lock is to prevent two threads from editing the craftBukkitWorldMap at the same time
@@ -84,7 +81,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                     }
                 }
             }
-            synchronized (this) {
+            synchronized (this) { //TODO possibly make this just entirely safety locked if errors occur
                 safetyLock.unlock();
                 world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
                 safetyLock.lock();
@@ -133,5 +130,10 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
     @Override
     public synchronized World getBukkitWorld() {
         return world == null ? null : world.getWorld();
+    }
+
+    @Override
+    public void invalidateWorld() {
+        this.world = null;
     }
 }

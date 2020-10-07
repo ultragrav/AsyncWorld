@@ -8,4 +8,5 @@ public interface CustomWorldHandler {
     boolean isWorldCreated();
     void addToWorldList();
     World getBukkitWorld();
+    void invalidateWorld();
 }

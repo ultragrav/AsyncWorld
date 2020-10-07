@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -54,30 +56,37 @@ public class NMSRelighter implements Relighter {
     private final List<QueuedRelight> queuedRelights = new ArrayList<>();
     private volatile boolean scheduled = false;
     private final ReentrantLock lock = new ReentrantLock(true);
+    private final ExecutorService service = Executors.newSingleThreadExecutor();
 
     private void schedule() {
         lock.lock();
         try {
             if (scheduled)
                 return;
-            new Thread(() -> {
+            service.submit(() -> {
                 try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    lock.lock();
+                    List<QueuedRelight> relights;
+                    try {
+                        scheduled = false;
+                        relights = new ArrayList<>(queuedRelights);
+                        queuedRelights.clear();
+                    } finally {
+                        lock.unlock();
+                    }
+                    Collections.sort(queuedRelights);
+                    long ms = System.currentTimeMillis();
+                    skyRelight(relights);
+                    ms = System.currentTimeMillis() - ms;
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-                lock.lock();
-                List<QueuedRelight> relights;
-                try {
-                    scheduled = false;
-                    relights = new ArrayList<>(queuedRelights);
-                    queuedRelights.clear();
-                } finally {
-                    lock.unlock();
-                }
-                Collections.sort(queuedRelights);
-                skyRelight(relights);
-            }).start();
+            });
             scheduled = true;
         } finally {
             lock.unlock();
@@ -105,7 +114,7 @@ public class NMSRelighter implements Relighter {
     //Credit to boydti (FastAsyncWorldEdit) for much of the below
 
     private void skyRelight(List<QueuedRelight> chunks) {
-        if(chunks.size() != 0) {
+        if (chunks.size() != 0) {
             chunks.get(0).chunk.getParent().ensureChunkLoaded(chunks.stream().map(c -> c.chunk).toArray(AsyncChunk[]::new));
         }
         for (int y = 255; y >= 0; y--) {
@@ -120,6 +129,10 @@ public class NMSRelighter implements Relighter {
                     }
                     continue;
                 }
+
+                if (!chunk.sectionExists(y >> 4))
+                    continue;
+
                 queuedChunk.smooth = false;
                 for (int i = 0; i < 256; i++) {
                     int value = current[i];
@@ -179,7 +192,7 @@ public class NMSRelighter implements Relighter {
             for (int i = chunks.size() - 1; i >= 0; i--) { // Smooth backwards
                 QueuedRelight chunk1 = chunks.get(i);
                 if (chunk1.smooth) {
-                   smoothSkyLight(chunk1, y, false);
+                    smoothSkyLight(chunk1, y, false);
                 }
             }
         }
@@ -200,9 +213,9 @@ public class NMSRelighter implements Relighter {
         int cz = z >> 4;
         AsyncChunk chunk = world.getChunk(cx, cz);
         int skyLight = world.syncGetSkyLight(x, y, z);
-        if(skyLight != 0)
+        if (skyLight != 0)
             return skyLight;
-        if(!chunk.sectionExists(y >> 4)) {
+        if (!chunk.sectionExists(y >> 4)) {
             return 15;
         }
         return 0;
@@ -221,8 +234,10 @@ public class NMSRelighter implements Relighter {
                     continue;
                 }
                 int value = mask[j];
-                if ((value = Math.max(getSkyLightForRelighting(chunk.chunk.getParent(), bx + x - 1, y, bz + z) - 1, value)) >= 14) ;
-                else if ((value = Math.max(getSkyLightForRelighting(chunk.chunk.getParent(),bx + x, y, bz + z - 1) - 1, value)) >= 14) ;
+                if ((value = Math.max(getSkyLightForRelighting(chunk.chunk.getParent(), bx + x - 1, y, bz + z) - 1, value)) >= 14)
+                    ;
+                else if ((value = Math.max(getSkyLightForRelighting(chunk.chunk.getParent(), bx + x, y, bz + z - 1) - 1, value)) >= 14)
+                    ;
                 if (value > mask[j]) chunk.chunk.syncSetSkyLight(x, y, z, mask[j] = value);
             }
         } else {
@@ -233,8 +248,10 @@ public class NMSRelighter implements Relighter {
                     continue;
                 }
                 int value = mask[j];
-                if ((value = (byte) Math.max(getSkyLightForRelighting(chunk.chunk.getParent(),bx + x + 1, y, bz + z) - 1, value)) >= 14) ;
-                else if ((value = (byte) Math.max(getSkyLightForRelighting(chunk.chunk.getParent(),bx + x, y, bz + z + 1) - 1, value)) >= 14) ;
+                if ((value = (byte) Math.max(getSkyLightForRelighting(chunk.chunk.getParent(), bx + x + 1, y, bz + z) - 1, value)) >= 14)
+                    ;
+                else if ((value = (byte) Math.max(getSkyLightForRelighting(chunk.chunk.getParent(), bx + x, y, bz + z + 1) - 1, value)) >= 14)
+                    ;
                 if (value > mask[j]) chunk.chunk.syncSetSkyLight(x, y, z, mask[j] = value);
             }
         }

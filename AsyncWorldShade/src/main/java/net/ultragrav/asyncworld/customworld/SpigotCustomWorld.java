@@ -329,6 +329,7 @@ public class SpigotCustomWorld extends CustomWorld {
             if (Bukkit.getWorld(this.getBukkitWorld().getUID()) != null) {
                 Bukkit.unloadWorld(this.getBukkitWorld(), false);
             }
+            this.worldHandler.invalidateWorld(); //Remove world from reference
         }
     }
 
