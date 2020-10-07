@@ -83,6 +83,7 @@ public class NMSRelighter implements Relighter {
                     long ms = System.currentTimeMillis();
                     skyRelight(relights);
                     ms = System.currentTimeMillis() - ms;
+                    //System.out.println("Relighted in " + ms + "ms");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -122,7 +123,14 @@ public class NMSRelighter implements Relighter {
                 int[] current = queuedChunk.current;
                 int sectionIndex = y >> 4;
                 AsyncChunk chunk = queuedChunk.chunk;
+
+                queuedChunk.smooth = false;
+
+                if (!chunk.sectionExists(y >> 4))
+                    continue;
+
                 RelightAction[] sectionMask = queuedChunk.sectionMask;
+
                 if (sectionMask[sectionIndex] != RelightAction.ACTION_RELIGHT) {
                     if ((y & 15) == 0 && sectionMask[sectionIndex] == RelightAction.ACTION_SKIP_SOLID) {
                         Arrays.fill(current, (byte) 0);
@@ -130,10 +138,6 @@ public class NMSRelighter implements Relighter {
                     continue;
                 }
 
-                if (!chunk.sectionExists(y >> 4))
-                    continue;
-
-                queuedChunk.smooth = false;
                 for (int i = 0; i < 256; i++) {
                     int value = current[i];
                     int x = i & 15;

@@ -393,7 +393,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                             editedSections |= 1 << (i - 1);
                         }
                         if (a && i != 15) {
-                            editedSections |= 1 << (i++ + 1);
+                            editedSections |= 1 << (++i);
                         }
                     }
                     masks.put(chunk, editedSections);
