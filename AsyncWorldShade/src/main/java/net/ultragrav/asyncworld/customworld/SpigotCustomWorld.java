@@ -191,11 +191,15 @@ public class SpigotCustomWorld extends CustomWorld {
 
         ms = System.currentTimeMillis();
 
+        //Make sure all required chunks are created
+        chunkSnapMap.forEach((k, v) -> this.asyncWorld.getChunk(v.getX(), v.getZ()));
+
         for (int x = 0; x < sizeChunksX; x++) {
             for (int z = 0; z < sizeChunksZ; z++) {
                 this.asyncWorld.getChunk(x, z);
             }
         }
+        //
 
         ms = System.currentTimeMillis();
 
