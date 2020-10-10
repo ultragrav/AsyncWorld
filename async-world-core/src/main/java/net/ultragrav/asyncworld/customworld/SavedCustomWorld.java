@@ -76,4 +76,16 @@ public class SavedCustomWorld implements GravSerializable {
     public List<CustomWorldChunkSnap> getChunks() {
         return this.chunks;
     }
+
+    /**
+     * Move all chunks by some amount
+     * @param x The amount of chunks (16 blocks) to translate in the X direction
+     * @param z The amount of chunks (16 blocks) to translate in the Z direction
+     */
+    public void translate(int x, int z) {
+        this.chunks.forEach(c -> {
+            c.setX(c.getX() + x);
+            c.setZ(c.getZ() + z);
+        });
+    }
 }
