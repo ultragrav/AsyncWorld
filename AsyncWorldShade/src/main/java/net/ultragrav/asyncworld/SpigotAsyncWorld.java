@@ -346,7 +346,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public void setBiome(int x, int z, int value) {
-        getChunk(x >> 4, z >> 4).setBiome(x & 15,z & 15, value);
+        getChunk(x >> 4, z >> 4).setBiome(x & 15, z & 15, value);
     }
 
     @Override
@@ -364,6 +364,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public CompletableFuture<Void> flush() {
+        return this.flush(true);
+    }
+
+    @Override
+    public CompletableFuture<Void> flush(boolean relight) {
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
         CompletableFuture<Void> future = new CompletableFuture<>();
 
@@ -376,7 +381,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 }
 
                 //Optimize
-                if(edited.size() >= 64) {
+                if (edited.size() >= 64) {
                     edited.forEach(c -> pool.submit(c::optimize));
                     while (true) if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
                 } else {
@@ -386,35 +391,41 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
                 Map<AsyncChunk, Integer> masks = new HashMap<>();
                 for (AsyncChunk chunk : edited) {
-                    int editedSections = chunk.getEditedSections();
-                    for (int i = 0; i < 16; i++) {
-                        boolean a = ((editedSections >>> i) & 1) != 0;
-                        if (a && i != 0) {
-                            editedSections |= 1 << (i - 1);
+                    if (relight) {
+                        int editedSections = chunk.getEditedSections();
+                        for (int i = 0; i < 16; i++) {
+                            boolean a = ((editedSections >>> i) & 1) != 0;
+                            if (a && i != 0) {
+                                editedSections |= 1 << (i - 1);
+                            }
+                            if (a && i != 15) {
+                                editedSections |= 1 << (++i);
+                            }
                         }
-                        if (a && i != 15) {
-                            editedSections |= 1 << (++i);
-                        }
+                        masks.put(chunk, editedSections);
+                    } else {
+                        chunk.setFullSkyLight(true);
                     }
-                    masks.put(chunk, editedSections);
                 }
                 //Queue
                 chunkQueue.queueChunks(edited, () -> {
                     edited.forEach(c -> {
-                        int mask = masks.get(c);
-                        Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
-                        for (int i = 0; i < 16; i++) {
-                            if ((mask >>> i & 1) == 1) {
-                                actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
-                            } else {
-                                actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                        if (relight) {
+                            int mask = masks.get(c);
+                            Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
+                            for (int i = 0; i < 16; i++) {
+                                if ((mask >>> i & 1) == 1) {
+                                    actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
+                                } else {
+                                    actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                                }
                             }
+                            relighter.queueSkyRelight(c, actions);
                         }
-                        relighter.queueSkyRelight(c, actions);
                     }); //Schedule relighting
                     future.complete(null);
                 });
-            } catch(Throwable t) {
+            } catch (Throwable t) {
                 t.printStackTrace();
             }
         };

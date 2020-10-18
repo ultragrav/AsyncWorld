@@ -287,6 +287,11 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
     }
 
     @Override
+    public CompletableFuture<Void> flush(boolean relight) {
+        return null;
+    }
+
+    @Override
     public boolean syncFlush(int timeoutMs) {
         return false;
     }

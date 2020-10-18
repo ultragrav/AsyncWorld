@@ -67,6 +67,7 @@ public abstract class AsyncWorld {
     public abstract void setIgnore(int x, int y, int z);
 
     public abstract CompletableFuture<Void> flush();
+    public abstract CompletableFuture<Void> flush(boolean relight);
 
     public abstract boolean syncFlush(int timeoutMs);
 

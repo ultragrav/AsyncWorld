@@ -2,6 +2,7 @@ package net.ultragrav.asyncworld;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
@@ -50,6 +51,9 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     protected volatile int editedSections;
     @Getter
     private AsyncWorld parent;
+    @Getter
+    @Setter
+    private volatile boolean fullSkyLight = false;
 
     @Getter(AccessLevel.PROTECTED)
     private final Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();
@@ -263,6 +267,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         this.update();
         this.editedSections = 0;
         this.chunkSections = new GUChunkSection[16];
+        fullSkyLight = false;
         return this;
     }
 
