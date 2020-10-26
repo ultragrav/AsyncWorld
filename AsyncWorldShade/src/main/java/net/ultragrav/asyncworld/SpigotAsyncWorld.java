@@ -2,7 +2,6 @@ package net.ultragrav.asyncworld;
 
 import lombok.Getter;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
-import net.ultragrav.asyncworld.chunk.AsyncChunk1_8_R3;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
  * Also works as a sort-of edit queue
  */
 public class SpigotAsyncWorld extends AsyncWorld {
-    private static ExecutorService executor = Executors.newCachedThreadPool();
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
     @Getter
     protected String serverVersion;
     private ChunkQueue chunkQueue;
@@ -68,8 +67,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
     protected AsyncChunk getNewChunk(int cx, int cz) {
         if (sV == 1)
             return new AsyncChunk1_12_R1(this, new ChunkLocation(this, cx, cz));
-        if (sV == 0)
-            return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
+//        if (sV == 0)
+//            return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
         return null;
     }
 
@@ -164,6 +163,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while (true) {
                 if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
             }
+            pool.shutdown();
         }
         IntVector3D finalPosition = position;
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
@@ -248,6 +248,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }));
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         } else {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
@@ -323,6 +324,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }));
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         } else {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
@@ -369,7 +371,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public CompletableFuture<Void> flush(boolean relight) {
-        ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+        ForkJoinPool pool = ForkJoinPool.commonPool();
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         Runnable runnable = () -> {
@@ -409,21 +411,24 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 }
                 //Queue
                 chunkQueue.queueChunks(edited, () -> {
-                    edited.forEach(c -> {
+                    try {
                         if (relight) {
-                            int mask = masks.get(c);
-                            Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
-                            for (int i = 0; i < 16; i++) {
-                                if ((mask >>> i & 1) == 1) {
-                                    actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
-                                } else {
-                                    actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                            edited.forEach(c -> {
+                                int mask = masks.get(c);
+                                Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
+                                for (int i = 0; i < 16; i++) {
+                                    if ((mask >>> i & 1) == 1) {
+                                        actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
+                                    } else {
+                                        actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                                    }
                                 }
-                            }
-                            relighter.queueSkyRelight(c, actions);
+                                relighter.queueSkyRelight(c, actions);
+                            }); //Schedule relighting
                         }
-                    }); //Schedule relighting
-                    future.complete(null);
+                    } finally {
+                        future.complete(null);
+                    }
                 });
             } catch (Throwable t) {
                 t.printStackTrace();
@@ -629,6 +634,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         }
     }
 
@@ -680,6 +686,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }));
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         } else {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
@@ -729,6 +736,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         }
     }
 }

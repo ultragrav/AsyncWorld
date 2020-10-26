@@ -152,6 +152,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
             while (!pool.isQuiescent()) {
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
             }
+            pool.shutdown();
         }
     }
 
@@ -363,6 +364,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
             }
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         }
     }
 

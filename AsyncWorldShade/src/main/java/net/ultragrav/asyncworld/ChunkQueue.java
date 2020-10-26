@@ -10,6 +10,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -234,17 +235,23 @@ public class ChunkQueue implements Listener {
     }
 
     public synchronized void queueChunks(List<AsyncChunk> chunks, Runnable callback) {
-        AtomicInteger completed = new AtomicInteger();
+        AtomicInteger completed = new AtomicInteger(0);
+        chunks = new ArrayList<>(chunks);
         final int needed = chunks.size();
+        final AtomicBoolean ran = new AtomicBoolean(false);
         listLock.lock();
         try {
             for (AsyncChunk chunk : chunks) {
                 if(!this.queueChunk(chunk, () -> {
-                    if(completed.incrementAndGet() == needed) {
+                    if(completed.incrementAndGet() >= needed && ran.compareAndSet(false, true)) {
                         callback.run();
                     }
                 })) {
-                    completed.incrementAndGet(); //increment completed if failed to queue
+
+                    //Failed to queue, count it as completed
+                    if(completed.incrementAndGet() >= needed && ran.compareAndSet(false, true)) {
+                        callback.run();
+                    }
                 }
             }
         } finally {

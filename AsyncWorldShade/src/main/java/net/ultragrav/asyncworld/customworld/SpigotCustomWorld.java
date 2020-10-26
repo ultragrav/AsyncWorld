@@ -120,6 +120,7 @@ public class SpigotCustomWorld extends CustomWorld {
         //that hold the nms chunks
         chunks.forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
+        pool.shutdown();
 
 
         //Add to world list (Must be sync)
@@ -227,6 +228,7 @@ public class SpigotCustomWorld extends CustomWorld {
                 worldHandler.finishChunk(c);
             })); //Submit tasks
             while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
+            pool.shutdown();
 
         }
 
