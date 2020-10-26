@@ -407,8 +407,12 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
                 if (optimizedSections[sectionIndex] != null) {
                     try {
-                        setPalette(section, optimizedSections[sectionIndex]); //Set palette
-                        setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
+                        if(airCount[sectionIndex] == 4096) {
+                            sections[sectionIndex] = null;
+                        } else {
+                            setPalette(section, optimizedSections[sectionIndex]); //Set palette
+                            setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
+                        }
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
@@ -458,6 +462,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         tilesToRemove.put(position, te);
                     }
                 }
+            }
+            if(air == 4096) {
+                sections[sectionIndex] = null;
             }
             sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
         }
