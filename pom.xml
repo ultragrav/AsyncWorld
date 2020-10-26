@@ -25,9 +25,5 @@
     </modules>
 
     <repositories>
-        <repository>
-            <id>ultradev</id>
-            <url>https://cdn.excelsiormc.net/mvnrepo</url>
-        </repository>
     </repositories>
 </project>

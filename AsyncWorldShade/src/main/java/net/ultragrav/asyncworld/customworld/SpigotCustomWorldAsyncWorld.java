@@ -177,7 +177,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
         chunk.setBiome(x & 15, z & 15, biome);
     }
 
-    public void syncForAllInRegion(CuboidRegion region, BiConsumer<Vector3D, Integer> action, boolean multiThread) {
+    public void syncForAllInRegion(CuboidRegion region, BiConsumer<IntVector3D, Integer> action, boolean multiThread) {
         if (!Bukkit.isPrimaryThread()) {
             Bukkit.getLogger().info("Called syncForAllInRegion from asynchronous thread!");
             return;
@@ -197,7 +197,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
                         chunk.getBukkitChunk().load(true);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
                         int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
-                        action.accept(new Vector3D(x, y, z), block);
+                        action.accept(new IntVector3D(x, y, z), block);
                     }
                 }
             }
@@ -234,7 +234,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
                             for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                                 for (int y = minBlockY; y <= maxBlockY; y++) {
                                     int block = chunk.getCombinedBlockSync(x, y, z);
-                                    action.accept(new Vector3D(x + bx, y, z + bz), block);
+                                    action.accept(new IntVector3D(x + bx, y, z + bz), block);
                                 }
                             }
                         }
@@ -256,12 +256,12 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
     }
 
     @Override
-    public void syncForAllInRegion(CuboidRegion cuboidRegion, AsyncWorldTriConsumer<Vector3D, Integer, TagCompound> asyncWorldTriConsumer, boolean b) {
+    public void syncForAllInRegion(CuboidRegion cuboidRegion, AsyncWorldTriConsumer<IntVector3D, Integer, TagCompound> asyncWorldTriConsumer, boolean b) {
 
     }
 
     @Override
-    public void asyncForAllInRegion(CuboidRegion cuboidRegion, AsyncWorldQuadConsumer<Vector3D, Integer, TagCompound, Integer> asyncWorldQuadConsumer, boolean b) {
+    public void asyncForAllInRegion(CuboidRegion cuboidRegion, AsyncWorldQuadConsumer<IntVector3D, Integer, TagCompound, Integer> asyncWorldQuadConsumer, boolean b) {
 
     }
 
