@@ -2,7 +2,6 @@ package net.ultragrav.asyncworld;
 
 import lombok.Getter;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
-import net.ultragrav.asyncworld.chunk.AsyncChunk1_8_R3;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
@@ -68,8 +67,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
     protected AsyncChunk getNewChunk(int cx, int cz) {
         if (sV == 1)
             return new AsyncChunk1_12_R1(this, new ChunkLocation(this, cx, cz));
-        if (sV == 0)
-            return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
+//        if (sV == 0)
+//            return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
         return null;
     }
 
