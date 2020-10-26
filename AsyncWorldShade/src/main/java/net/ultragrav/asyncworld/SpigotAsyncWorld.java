@@ -163,6 +163,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while (true) {
                 if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
             }
+            pool.shutdown();
         }
         IntVector3D finalPosition = position;
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
@@ -247,6 +248,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }));
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         } else {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
@@ -322,6 +324,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }));
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         } else {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
@@ -381,8 +384,10 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
                 //Optimize
                 if (edited.size() >= 64) {
+                    long ms = System.currentTimeMillis();
                     edited.forEach(c -> pool.submit(c::optimize));
                     while (true) if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
+                    ms = System.currentTimeMillis() - ms;
                 } else {
                     edited.forEach(AsyncChunk::optimize);
                 }
@@ -431,6 +436,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
         if (Bukkit.isPrimaryThread()) {
             pool.execute(runnable);
+            pool.shutdown();
         } else {
             runnable.run();
         }
@@ -628,6 +634,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         }
     }
 
@@ -679,6 +686,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }));
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         } else {
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
@@ -728,6 +736,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }
             while (!pool.isQuiescent())
                 pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            pool.shutdown();
         }
     }
 }

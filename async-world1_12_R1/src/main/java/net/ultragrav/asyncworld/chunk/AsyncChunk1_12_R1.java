@@ -102,6 +102,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void end(int mask) {
         Chunk nmsChunk = getNmsChunk();
+        long ms = System.currentTimeMillis();
 
         //Remove tile entity
         tilesToRemove.forEach((bp, te) -> {
@@ -129,8 +130,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         });
 
         getTiles().clear();
-
+        ms = System.currentTimeMillis() - ms;
+        ms = System.currentTimeMillis();
         this.sendPackets(mask);
+        ms = System.currentTimeMillis() - ms;
     }
 
     @Override
@@ -281,7 +284,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public boolean sectionExists(int section) {
-        if(getNmsChunk() == null)
+        if (getNmsChunk() == null)
             return false;
         return getNmsChunk().getSections()[section] != null;
     }
@@ -363,10 +366,17 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
         int remMask = 0;
 
+        long totalMs = System.currentTimeMillis();
+
+        long[] sectionsMs = new long[16];
+
         ChunkSection[] sections = nmsChunk.getSections();
         for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
             if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
                 continue;
+
+            long sectionMs = System.currentTimeMillis();
+
             ChunkSection section = sections[sectionIndex];
 
             GUChunkSection guChunkSection = chunkSections[sectionIndex];
@@ -392,21 +402,18 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 System.arraycopy(guChunkSection.emittedLight, 0,
                         section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
 
-                if(this.isFullSkyLight())
+                if (this.isFullSkyLight())
                     Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
 
                 if (optimizedSections[sectionIndex] != null) {
                     try {
-                        if (airCount[sectionIndex] == 4096) {
-                            sections[sectionIndex] = null;
-                        } else {
-                            setPalette(section, optimizedSections[sectionIndex]); //Set palette
-                            setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
-                        }
+                        setPalette(section, optimizedSections[sectionIndex]); //Set palette
+                        setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
                     remMask |= 1 << sectionIndex;
+                    sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
                     continue;
                 }
             }
@@ -439,7 +446,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     int emittedLight = (guChunkSection.emittedLight[index] >>> (part * 4) & 0xF);
                     section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
 
-                    if(this.isFullSkyLight())
+                    if (this.isFullSkyLight())
                         section.getSkyLightArray().a(lx, ly, lz, 0xF);
                 }
 
@@ -452,9 +459,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     }
                 }
             }
-            if (air == 4096) {
-                sections[sectionIndex] = null;
-            }
+            sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
         }
 
 
@@ -477,7 +482,18 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
 
         //heightmap/lighting
+        long ms = System.currentTimeMillis();
         nmsChunk.initLighting();
+        ms = System.currentTimeMillis() - ms;
+
+
+        totalMs = System.currentTimeMillis() - totalMs;
+//        StringBuilder b = new StringBuilder();
+//        b.append("Chunk total: ").append(totalMs).append("ms").append("\n");
+//        for(int i = 0; i < 16; i++) {
+//            b.append(sectionsMs[i]).append(" ");
+//        }
+//        System.out.println(b.toString());
 
         //Cleanup
         optimizedSections = new DataPaletteBlock[16];

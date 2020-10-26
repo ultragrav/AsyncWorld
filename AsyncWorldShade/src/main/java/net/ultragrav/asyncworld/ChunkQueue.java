@@ -71,6 +71,8 @@ public class ChunkQueue implements Listener {
             }
         } else {
             try {
+                int amount = 0;
+                long ms1 = System.currentTimeMillis();
                 List<CompletableFuture<AsyncChunk>> futures = new ArrayList<>();
                 while (System.currentTimeMillis() - ms < time) {
                     Map<AsyncChunk, Integer> masks = new ConcurrentHashMap<>();
@@ -86,6 +88,7 @@ public class ChunkQueue implements Listener {
                             callbacks.addAll(chunks.get(0).getCallbacks());
                             chunks.remove(0);
                             todo.add(chunk);
+                            amount++;
                         }
                     } finally {
                         listLock.unlock(); //Unlock
@@ -99,10 +102,12 @@ public class ChunkQueue implements Listener {
                         CompletableFuture<AsyncChunk> future = new CompletableFuture<>();
 
                         //NOTE this is a just the scheduling of the task, not the execution, so this doesn't take long
-                        executor.execute(() -> {
+                        ForkJoinPool.commonPool().execute(() -> {
                             synchronized (chunk) { //synchronized so the editedSections is correct
                                 masks.put(chunk, chunk.getEditedSections());
+                                long ms2 = System.currentTimeMillis();
                                 chunk.call();
+                                ms2 = System.currentTimeMillis() - ms2;
                             }
                             future.complete(chunk);
                         });
@@ -116,10 +121,13 @@ public class ChunkQueue implements Listener {
                     while (futureIterator.hasNext()) {
                         future = futureIterator.next();
                         AsyncChunk chunk = future.get();
+                        long ms2 = System.currentTimeMillis();
                         chunk.end(masks.get(chunk));
+                        ms2 = System.currentTimeMillis() - ms2;
                         futureIterator.remove();
                     }
                 }
+                ms1 = System.currentTimeMillis() - ms1;
             } catch (Exception e) {
                 e.printStackTrace();
             }

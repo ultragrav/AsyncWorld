@@ -32,7 +32,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     static {
         Arrays.fill(airFilled, (short) -1);
 
-        for(int i = 0; i < 4096; i++) {
+        for (int i = 0; i < 4096; i++) {
             byte x = (byte) (i & 0xF);
             byte y = (byte) (i >>> 8);
             byte z = (byte) (i >>> 4 & 0xF);
@@ -107,8 +107,12 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
         else
             chunkSections[section].edited[eIndex] &= ~(1L << eIndexIndex);
 
-        if (addTile && hasTileEntity(combinedBlockId & 0xFFF)) {
-            setTileEntity(getLX(index), getLY(index) + (section << 4), getLZ(index), new TagCompound());
+        if (combinedBlockId != 0) {
+            if (combinedBlockId != -1 && addTile && hasTileEntity(combinedBlockId & 0xFFF)) {
+                setTileEntity(getLX(index), getLY(index) + (section << 4), getLZ(index), new TagCompound());
+            }
+        } else {
+            setTileEntity(getLX(index), getLY(index) + (section << 4), getLZ(index), null);
         }
     }
 
@@ -123,7 +127,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public synchronized void writeBlock(int x, int y, int z, int id, byte data, boolean addTile) {
         if (id < 0 && id != -1)
             throw new IllegalArgumentException("ID cannot be less than 0 (air)");
-        if(x > 15 || z > 15)
+        if (x > 15 || z > 15)
             throw new IllegalArgumentException("Cannot set block at chunk coordinates: " + x + " " + y + " " + z + " (out of bounds)");
         if (y < 0)
             return;
@@ -135,11 +139,11 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             id = 0;
             data = 0;
         }
-        writeBlock(y >>> 4, getCombinedLoc(x & 0xF, y & 0xF, z & 0xF), ((data & 0xF) << 12 | (id > 0 ? id & 0xFFF : id) & 0xFFFF), addTile);
+        writeBlock(y >>> 4, getCombinedLoc(x & 0xF, y & 0xF, z & 0xF), id > 0 ? ((data & 0xF) << 12 | (id & 0xFFF) & 0xFFFF) : id, addTile);
     }
 
     public synchronized void setEmittedLight(int x, int y, int z, int value) {
-        if(y > 255)
+        if (y > 255)
             return;
         value = value & 0xF;
         int section = y >>> 4;
@@ -245,7 +249,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
 
     public synchronized void optimize() {
         for (int i = 0; i < chunkSections.length; i++) {
-            OUTER: if (chunkSections[i] != null) {
+            OUTER:
+            if (chunkSections[i] != null) {
                 for (long l : chunkSections[i].edited) {
                     if (l != -1L) {
                         break OUTER;
@@ -293,18 +298,31 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     public abstract int syncGetEmittedLight(int x, int y, int z);
+
     public abstract int syncGetSkyLight(int x, int y, int z);
+
     public abstract int syncGetBrightnessOpacity(int x, int y, int z);
+
     public abstract void syncSetEmittedLight(int x, int y, int z, int value);
+
     public abstract void syncSetSkyLight(int x, int y, int z, int value);
+
     public abstract Map<IntVector3D, TagCompound> syncGetTiles();
+
     public abstract List<TagCompound> syncGetEntities();
+
     public abstract int[] syncGetHeightMap();
+
     public abstract void syncGetBlocksAndData(byte[] blocks, byte[] data, int section);
+
     public abstract byte[] syncGetEmittedLight(int section);
+
     public abstract byte[] syncGetSkyLight(int section);
+
     public abstract short getSectionBitMask();
+
     public abstract byte[] syncGetBiomes();
+
     public abstract boolean sectionExists(int section);
 
     public abstract void loadTiles();
@@ -330,6 +348,8 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public static boolean hasTileEntity(int id) {
         if (id > CACHE_TILE.length)
             return true;
+        if(id < 0)
+            return false;
         return CACHE_TILE[id];
     }
 
