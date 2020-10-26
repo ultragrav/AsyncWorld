@@ -183,12 +183,12 @@ public class SpigotAsyncWorld extends AsyncWorld {
     }
 
     @Override
-    public void syncForAllInRegion(CuboidRegion region, BiConsumer<Vector3D, Integer> action, boolean multiThread) {
+    public void syncForAllInRegion(CuboidRegion region, BiConsumer<IntVector3D, Integer> action, boolean multiThread) {
         syncForAllInRegion(region, (a, b, c) -> action.accept(a, b), multiThread);
     }
 
     @Override
-    public void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<Vector3D, Integer, TagCompound> action, boolean multiThread) {
+    public void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<IntVector3D, Integer, TagCompound> action, boolean multiThread) {
         boolean isSync = Bukkit.isPrimaryThread();
 
         CompletableFuture<Void> f = new CompletableFuture<>();
@@ -238,8 +238,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                         for (int y = minBlockY; y <= maxBlockY; y++) {
                             int block = chunk.getCombinedBlockSync(x, y, z);
-                            Vector3D vec = new Vector3D(x + bx, y, z + bz);
-                            action.accept(vec, block, tiles.get(vec.asIntVector()));
+                            IntVector3D vec = new IntVector3D(x + bx, y, z + bz);
+                            action.accept(vec, block, tiles.get(vec));
                         }
                     }
                 }
@@ -253,8 +253,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     AsyncChunk chunk = getChunk(x >> 4, z >> 4);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
                         int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
-                        Vector3D vec = new Vector3D(x, y, z);
-                        action.accept(vec, block, tiles.get(vec.asIntVector()));
+                        IntVector3D vec = new IntVector3D(x, y, z);
+                        action.accept(vec, block, tiles.get(vec));
                     }
                 }
             }
@@ -262,7 +262,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
     }
 
     @Override
-    public void asyncForAllInRegion(CuboidRegion region, AsyncWorldQuadConsumer<Vector3D, Integer, TagCompound, Integer> action, boolean multiThread) {
+    public void asyncForAllInRegion(CuboidRegion region, AsyncWorldQuadConsumer<IntVector3D, Integer, TagCompound, Integer> action, boolean multiThread) {
         boolean isSync = Bukkit.isPrimaryThread();
 
         CompletableFuture<Void> f = new CompletableFuture<>();
@@ -312,8 +312,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                         for (int y = minBlockY; y <= maxBlockY; y++) {
                             int block = chunk.getCombinedBlockSync(x, y, z);
-                            Vector3D vec = new Vector3D(x + bx, y, z + bz);
-                            action.accept(vec, block, tiles.get(vec.asIntVector()),
+                            IntVector3D vec = new IntVector3D(x + bx, y, z + bz);
+                            action.accept(vec, block, tiles.get(vec),
                                     chunk.syncGetEmittedLight(x, y, z));
                         }
                     }
@@ -328,8 +328,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     AsyncChunk chunk = getChunk(x >> 4, z >> 4);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
                         int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
-                        Vector3D vec = new Vector3D(x, y, z);
-                        action.accept(vec, block, tiles.get(vec.asIntVector()),
+                        IntVector3D vec = new IntVector3D(x, y, z);
+                        action.accept(vec, block, tiles.get(vec),
                                 chunk.syncGetEmittedLight(x, y, z));
                     }
                 }
