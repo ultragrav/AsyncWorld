@@ -118,7 +118,13 @@ public class SpigotCustomWorld extends CustomWorld {
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()); //Multi-threaded
         List<CustomWorldAsyncChunk<?>> chunks = asyncWorld.getChunkMap().getCachedCopy(); //DO NOT CLEAR THE CHUNK MAP because they're 1 time creation chunks
         //that hold the nms chunks
-        chunks.forEach((c) -> pool.submit(() -> worldHandler.finishChunk(c))); //Submit tasks
+        chunks.forEach((c) -> pool.submit(() -> {
+            try {
+                worldHandler.finishChunk(c);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        })); //Submit tasks
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
         pool.shutdown();
 
@@ -203,7 +209,7 @@ public class SpigotCustomWorld extends CustomWorld {
 
         ms = System.currentTimeMillis();
 
-        if(preloadChunks) {
+        if (preloadChunks) {
 
             //Make sure all required chunks are created
             chunkSnapMap.forEach((k, v) -> this.asyncWorld.getChunk(v.getX(), v.getZ()));
@@ -322,14 +328,14 @@ public class SpigotCustomWorld extends CustomWorld {
     @Override
     public CustomWorldAsyncChunk<?> getChunk(int cx, int cz) {
         if (asyncWorld.getChunkMap().get(cx, cz) == null) {
-            if(preloaded.get())
+            if (preloaded.get())
                 return null;
 
             //Load it
             CustomWorldChunkSnap snap = currentChunkSnapMap.remove(((long) cx << 32) | ((long) cz));
 
             //Doesn't exist
-            if(snap == null)
+            if (snap == null)
                 return null;
 
             CustomWorldAsyncChunk<?> chunk = asyncWorld.getChunk(cx, cz);
@@ -413,7 +419,7 @@ public class SpigotCustomWorld extends CustomWorld {
         }
 
         //Add all of the chunks that have not been loaded yet (if preloading = false)
-        if(!preloaded.get())
+        if (!preloaded.get())
             save.getChunks().addAll(this.currentChunkSnapMap.values());
 
         return save;

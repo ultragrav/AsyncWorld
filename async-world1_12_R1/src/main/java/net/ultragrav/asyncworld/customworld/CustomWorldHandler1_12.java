@@ -27,13 +27,14 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             e.printStackTrace();
         }
     }
+
     private CustomWorldServer1_12 world = null;
 
     private static final ReentrantLock safetyLock = new ReentrantLock(true);
 
     @Override
     public void finishChunk(CustomWorldAsyncChunk<?> chunk) {
-        ((CustomWorldAsyncChunk1_12)chunk).finish(world);
+        ((CustomWorldAsyncChunk1_12) chunk).finish(world);
     }
 
     @Override
@@ -53,17 +54,19 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             Map<Object, Object> current = (Map<Object, Object>) craftBukkitWorldMap.get(Bukkit.getServer());
             if (!current.getClass().getName().contains("Synchronized")) {
                 CompletableFuture<Void> future = new CompletableFuture<>();
-                new BukkitRunnable() { public void run() {
-                    try {
-                        craftBukkitWorldMap.setAccessible(true);
-                        craftBukkitWorldMap.set(Bukkit.getServer(), Collections.synchronizedMap((Map<Object, Object>) craftBukkitWorldMap.get(Bukkit.getServer())));
-                        craftBukkitWorldMap.setAccessible(false);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } finally {
-                        future.complete(null);
+                new BukkitRunnable() {
+                    public void run() {
+                        try {
+                            craftBukkitWorldMap.setAccessible(true);
+                            craftBukkitWorldMap.set(Bukkit.getServer(), Collections.synchronizedMap((Map<Object, Object>) craftBukkitWorldMap.get(Bukkit.getServer())));
+                            craftBukkitWorldMap.setAccessible(false);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } finally {
+                            future.complete(null);
+                        }
                     }
-                }}.runTask(customWorld.getPlugin());
+                }.runTask(customWorld.getPlugin());
                 future.get();
             }
             craftBukkitWorldMap.setAccessible(false);
@@ -81,13 +84,12 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                     }
                 }
             }
-            synchronized (this) { //TODO possibly make this just entirely safety locked if errors occur
-                safetyLock.unlock();
-                world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
-                safetyLock.lock();
-                world.b();
-            }
-        } catch(Exception e) {
+            safetyLock.unlock();
+            world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
+            safetyLock.lock();
+            world.b();
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         } finally {
             safetyLock.unlock();

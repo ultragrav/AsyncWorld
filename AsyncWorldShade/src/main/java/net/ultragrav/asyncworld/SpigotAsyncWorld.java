@@ -432,11 +432,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
             } catch (Throwable t) {
                 t.printStackTrace();
             }
+            pool.shutdown();
         };
 
         if (Bukkit.isPrimaryThread()) {
             pool.execute(runnable);
-            pool.shutdown();
         } else {
             runnable.run();
         }
