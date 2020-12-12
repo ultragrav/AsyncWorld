@@ -15,8 +15,8 @@ public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
     // Load chunk
     @Override
     public Chunk a(World nmsWorld, int x, int z) {
-        CustomWorldAsyncChunk1_12 c = ((CustomWorldAsyncChunk1_12)customWorld.getChunk(x, z));
-        if(c == null) {
+        CustomWorldAsyncChunk1_12 c = ((CustomWorldAsyncChunk1_12) customWorld.getChunk(x, z));
+        if (c == null) {
             return null;
         }
         Chunk chunk = c.getStoredChunk();
@@ -37,7 +37,8 @@ public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
 
     @Override
     public boolean chunkExists(int x, int z) {
-        return true; // Prevent chunk generator from being called
+        CustomWorldAsyncChunk1_12 c = ((CustomWorldAsyncChunk1_12) customWorld.getChunk(x, z));
+        return c != null;
     }
 
     // Does literally nothing
