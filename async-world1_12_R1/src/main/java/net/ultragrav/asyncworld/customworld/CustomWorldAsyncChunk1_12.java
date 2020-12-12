@@ -197,6 +197,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             sects = sections;
         }
 
+        //Set lighting (sky, emitted), blocks, and height map
         short mask = snap.getSectionBitMask();
         for (int i = 0; i < 16; i++) {
             if (((mask >>> i) & 1) == 0)
@@ -272,19 +273,19 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
                     Block block = iblockdata.getBlock();
                     entity = !block.isTileEntity() ? null : ((ITileEntity) block).a(nmsChunk.getWorld(), iblockdata.getBlock().toLegacyData(iblockdata));
                     if (entity != null) {
-                        entity.a(nmsChunk.getWorld()); //Set world
+
                         nmsChunk.getWorld().a(entity); //Add to world
                         nmsChunk.a(bp, entity); //Add to chunk
+
+                        //Set Tile Entity's Coordinates in it's NBT
+                        te.getData().put("x", new TagInt(bp.getX()));
+                        te.getData().put("y", new TagInt(bp.getY()));
+                        te.getData().put("z", new TagInt(bp.getZ()));
+
+                        entity.load(AsyncChunk1_12_R1.fromGenericCompound(te)); //Load NBT into tile entity
+
+                        entity.a(nmsChunk.getWorld()); //Set world
                     }
-                }
-                if (entity != null) {
-
-                    //Set Tile Entity's Coordinates in it's NBT
-                    te.getData().put("x", new TagInt(bp.getX()));
-                    te.getData().put("y", new TagInt(bp.getY()));
-                    te.getData().put("z", new TagInt(bp.getZ()));
-
-                    entity.load(AsyncChunk1_12_R1.fromGenericCompound(te)); //Load NBT into tile entity
                 }
             });
 
