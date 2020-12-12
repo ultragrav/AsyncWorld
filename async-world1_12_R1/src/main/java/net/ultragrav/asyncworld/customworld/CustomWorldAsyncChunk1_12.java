@@ -274,9 +274,6 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
                     entity = !block.isTileEntity() ? null : ((ITileEntity) block).a(nmsChunk.getWorld(), iblockdata.getBlock().toLegacyData(iblockdata));
                     if (entity != null) {
 
-                        nmsChunk.getWorld().a(entity); //Add to world
-                        nmsChunk.a(bp, entity); //Add to chunk
-
                         //Set Tile Entity's Coordinates in it's NBT
                         te.getData().put("x", new TagInt(bp.getX()));
                         te.getData().put("y", new TagInt(bp.getY()));
@@ -284,6 +281,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
                         entity.load(AsyncChunk1_12_R1.fromGenericCompound(te)); //Load NBT into tile entity
 
+                        nmsChunk.getWorld().a(entity); //Add to world
+                        nmsChunk.a(bp, entity); //Add to chunk
                         entity.a(nmsChunk.getWorld()); //Set world
                     }
                 }
