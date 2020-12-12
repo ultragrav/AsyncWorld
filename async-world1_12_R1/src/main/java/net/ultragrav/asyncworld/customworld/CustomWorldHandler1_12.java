@@ -54,7 +54,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             Map<Object, Object> current = (Map<Object, Object>) craftBukkitWorldMap.get(Bukkit.getServer());
             if (!current.getClass().getName().contains("Synchronized")) {
                 CompletableFuture<Void> future = new CompletableFuture<>();
-                new BukkitRunnable() {
+                BukkitRunnable runnable = new BukkitRunnable() {
                     public void run() {
                         try {
                             craftBukkitWorldMap.setAccessible(true);
@@ -66,7 +66,11 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                             future.complete(null);
                         }
                     }
-                }.runTask(customWorld.getPlugin());
+                };
+                if(Bukkit.isPrimaryThread())
+                    runnable.run();
+                else
+                    runnable.runTask(customWorld.getPlugin());
                 future.get();
             }
             craftBukkitWorldMap.setAccessible(false);
