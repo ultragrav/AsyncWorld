@@ -53,7 +53,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     private AsyncWorld parent;
     @Getter
     @Setter
-    private volatile boolean fullSkyLight = false;
+    protected volatile boolean fullSkyLight = false;
 
     @Getter(AccessLevel.PROTECTED)
     private final Map<IntVector3D, TagCompound> tiles = new ConcurrentHashMap<>();

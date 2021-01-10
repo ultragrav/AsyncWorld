@@ -173,7 +173,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
             Runnable runnable = () -> {
                 tiles.set(new ArrayList<>(chunk.syncGetTiles().values()));
                 entities.set(chunk.syncGetEntities());
-            };
+            };w
 
             CompletableFuture<Void> f = new CompletableFuture<>();
             if (Bukkit.isPrimaryThread()) {

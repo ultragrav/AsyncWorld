@@ -86,7 +86,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     public void setPalette(ChunkSection section, DataPaletteBlock palette) throws NoSuchFieldException, IllegalAccessException {
         fieldPalette.set(section, palette);
-        Arrays.fill(section.getEmittedLightArray().asBytes(), (byte) 0);
     }
 
     private Chunk getNmsChunk() {
@@ -352,6 +351,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public void update() {
+        //long ms = System.nanoTime();
         ChunkLocation loc = this.getLoc();
         Chunk nmsChunk = getNmsChunk();
         nmsCachedChunk = null;
@@ -366,16 +366,12 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
         int remMask = 0;
 
-        long totalMs = System.currentTimeMillis();
-
-        long[] sectionsMs = new long[16];
+        int compEdited = 0;
 
         ChunkSection[] sections = nmsChunk.getSections();
         for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
             if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
                 continue;
-
-            long sectionMs = System.currentTimeMillis();
 
             ChunkSection section = sections[sectionIndex];
 
@@ -388,7 +384,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             if (!completelyEdited) {
                 completelyEdited = true;
                 long[] edited = guChunkSection.edited;
-                for (long l : edited) {
+                for (int i = 0, editedLength = edited.length; i < editedLength; i++) {
+                    long l = edited[i];
                     if (l != -1L) {
                         completelyEdited = false;
                         break;
@@ -397,6 +394,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             }
 
             if (completelyEdited) {
+                compEdited++;
                 if (section == null)
                     section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
                 System.arraycopy(guChunkSection.emittedLight, 0,
@@ -413,7 +411,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         e.printStackTrace();
                     }
                     remMask |= 1 << sectionIndex;
-                    sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
                     continue;
                 }
             }
@@ -424,11 +421,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
             for (int i = 0; i < 4096; i++) {
 
-                short block = sectionContents[i];
+                int block = sectionContents[i];
 
-                int lx = getLX(i);
-                int ly = getLY(i);
-                int lz = getLZ(i);
+                int lx = CACHE_X[i];
+                int ly = CACHE_Y[i];
+                int lz = CACHE_Z[i];
 
                 if (block == -2 || block == 0)
                     continue;
@@ -459,7 +456,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     }
                 }
             }
-            sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
         }
 
 
@@ -482,12 +478,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
 
         //heightmap/lighting
-        long ms = System.currentTimeMillis();
+      //  long ms1 = System.nanoTime();
         nmsChunk.initLighting();
-        ms = System.currentTimeMillis() - ms;
+        //ms1 = System.nanoTime() - ms1;
+      // System.out.println("Initing lighting took: " + ms1 + "ns");
 
-
-        totalMs = System.currentTimeMillis() - totalMs;
 //        StringBuilder b = new StringBuilder();
 //        b.append("Chunk total: ").append(totalMs).append("ms").append("\n");
 //        for(int i = 0; i < 16; i++) {
@@ -497,6 +492,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
         //Cleanup
         optimizedSections = new DataPaletteBlock[16];
+
+        //ms = System.nanoTime() - ms;
+       // System.out.println("Chunk update took: " + ms + "ns comp edits: " + compEdited);
     }
 
     @Override
