@@ -172,14 +172,21 @@ public class SpigotAsyncWorld extends AsyncWorld {
     @Override
     public void setBlocks(CuboidRegion region, Supplier<Short> blockSupplier) {
         //small edit
-        for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getX(); x++) {
-            for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getZ(); z++) {
-                AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
-                for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getY(); y++) {
-                    int block = blockSupplier.get();
-                    currentChunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
+        if(region.getArea() < 1000000) {
+            for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getX(); x++) {
+                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getZ(); z++) {
+                    AsyncChunk currentChunk = getChunk(x >> 4, z >> 4);
+                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getY(); y++) {
+                        int block = blockSupplier.get();
+                        currentChunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
+                    }
                 }
             }
+        } else {
+            actionBlocks(region, (chunk, x, y, z) -> {
+                int block = blockSupplier.get();
+                chunk.writeBlock(x & 15, y, z & 15, block & 4095, (byte) (block >>> 12));
+            }, Runtime.getRuntime().availableProcessors());
         }
     }
 
