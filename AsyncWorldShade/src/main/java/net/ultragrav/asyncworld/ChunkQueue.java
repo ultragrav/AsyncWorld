@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ChunkQueue implements Listener {
-    public static int WORK_TIME_PER_TICK_MS = 25;
+    public static int WORK_TIME_PER_TICK_MS = 20;
     public static int THREADS = Runtime.getRuntime().availableProcessors();
     ExecutorService executor = Executors.newCachedThreadPool();
     boolean useGC = false;
