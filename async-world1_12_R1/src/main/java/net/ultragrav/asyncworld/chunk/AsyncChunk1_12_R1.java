@@ -497,6 +497,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
 
+        //Clear tiles in the specified sections
         Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
         tiles.forEach((p, t) -> {
             if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
@@ -508,7 +509,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 continue;
 
             ChunkSection section = sections[sectionIndex];
-            if (section == null) {
+            if (section == null) { //Section is null (filled with air)
                 GUChunkSection section1 = this.chunkSections[sectionIndex];
                 if (section1 == null)
                     section1 = this.chunkSections[sectionIndex] = new GUChunkSection();
@@ -534,8 +535,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
 
         //Do this after writing blocks because writing blocks may set tile entities
+        //Load tile entities in specified sections
         chunk.getTileEntities().forEach((p, t) -> {
             if (t == null)
+                return;
+            if(((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
                 return;
             this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(t.save(new NBTTagCompound())));
         });
