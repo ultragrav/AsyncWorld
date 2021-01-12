@@ -229,9 +229,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
             //Refresh chunks with mask
 
-            long ms = System.currentTimeMillis();
-            actionChunks(region, (c) -> c.refresh(finalMask), Runtime.getRuntime().availableProcessors());
-            ms = System.currentTimeMillis() - ms;
+            actionChunks(region, (c) -> c.refresh(finalMask), Runtime.getRuntime().availableProcessors(), true);
 
             //Complete future
             f.complete(null);
