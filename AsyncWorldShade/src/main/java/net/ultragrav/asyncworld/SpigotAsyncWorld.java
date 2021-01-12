@@ -203,7 +203,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
             int threads = multiThread ? Runtime.getRuntime().availableProcessors() : 1;
             actionBlocks(region, (chunk, x, y, z) -> action.accept(new IntVector3D(x, y, z), chunk.readBlock(x & 15, y, z & 15), chunk.getTile(x & 15, y, z & 15)), (c) -> c.refresh(0xFFFF), threads, true);
         };
-
         if (isSync) {
             runnable.run();
         } else {
@@ -525,12 +524,9 @@ public class SpigotAsyncWorld extends AsyncWorld {
         int maxI = max.getBlockX() >> 4;
         int maxJ = max.getBlockZ() >> 4;
 
-        for (int i = minI; i <= maxI; i++) {
-            for (int j = minJ; j <= maxJ; j++) {
-                AsyncChunk chunk = getChunk(i, j);
-                chunks.add(chunk);
-            }
-        }
+        for (int i = minI; i <= maxI; i++)
+            for (int j = minJ; j <= maxJ; j++)
+                chunks.add(getChunk(i, j));
 
         if (ensureLoaded)
             ensureChunkLoaded(chunks.toArray(new AsyncChunk[0]));
