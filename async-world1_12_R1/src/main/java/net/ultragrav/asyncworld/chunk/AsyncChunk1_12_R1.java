@@ -20,6 +20,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     private DataPaletteBlock[] optimizedSections = new DataPaletteBlock[16];
     private final int[] airCount = new int[16];
+    private static final byte[] BIOME_DEFAULT = new byte[256];
 
     private static Field fieldPalette;
     private static Field fieldTickingBlockCount;
@@ -38,6 +39,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
+        Arrays.fill(BIOME_DEFAULT, (byte) -1);
     }
 
     private void validateCachedChunk() {
@@ -84,7 +86,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     public void setPalette(ChunkSection section, DataPaletteBlock palette) throws NoSuchFieldException, IllegalAccessException {
         fieldPalette.set(section, palette);
-        Arrays.fill(section.getEmittedLightArray().asBytes(), (byte) 0);
     }
 
     private Chunk getNmsChunk() {
@@ -350,6 +351,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public void update() {
+        //long ms = System.nanoTime();
         ChunkLocation loc = this.getLoc();
         Chunk nmsChunk = getNmsChunk();
         nmsCachedChunk = null;
@@ -364,16 +366,12 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
         int remMask = 0;
 
-        long totalMs = System.currentTimeMillis();
-
-        long[] sectionsMs = new long[16];
+        int compEdited = 0;
 
         ChunkSection[] sections = nmsChunk.getSections();
         for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
             if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
                 continue;
-
-            long sectionMs = System.currentTimeMillis();
 
             ChunkSection section = sections[sectionIndex];
 
@@ -386,7 +384,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             if (!completelyEdited) {
                 completelyEdited = true;
                 long[] edited = guChunkSection.edited;
-                for (long l : edited) {
+                for (int i = 0, editedLength = edited.length; i < editedLength; i++) {
+                    long l = edited[i];
                     if (l != -1L) {
                         completelyEdited = false;
                         break;
@@ -395,6 +394,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             }
 
             if (completelyEdited) {
+                compEdited++;
                 if (section == null)
                     section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
                 System.arraycopy(guChunkSection.emittedLight, 0,
@@ -411,7 +411,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                         e.printStackTrace();
                     }
                     remMask |= 1 << sectionIndex;
-                    sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
                     continue;
                 }
             }
@@ -424,9 +423,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
                 short block = sectionContents[i];
 
-                int lx = getLX(i);
-                int ly = getLY(i);
-                int lz = getLZ(i);
+                int lx = CACHE_X[i];
+                int ly = CACHE_Y[i];
+                int lz = CACHE_Z[i];
 
                 if (block == -2 || block == 0)
                     continue;
@@ -436,28 +435,30 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     air++;
                 }
 
-                section.setType(lx, ly, lz, Block.getByCombinedId(block & 0xFFFF));
+                IBlockData bd = Block.getByCombinedId(block & 0xFFFF);
+                section.setType(lx, ly, lz, bd);
                 if (!completelyEdited) {
                     int index = i;
                     int part = index & 1;
                     index >>>= 1;
-                    int emittedLight = (guChunkSection.emittedLight[index] >>> (part * 4) & 0xF);
+                    int emittedLight = (guChunkSection.emittedLight[index] >>> (part << 2) & 0xF);
                     section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
 
-                    if (this.isFullSkyLight())
+                    if (this.fullSkyLight)
                         section.getSkyLightArray().a(lx, ly, lz, 0xF);
                 }
 
                 //Remove tile entity
                 if (!noTiles) {
                     BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
-                    TileEntity te = nmsChunk.getTileEntities().get(position);
+                    TileEntity te = nmsChunk.tileEntities.get(position);
                     if (te != null) {
                         tilesToRemove.put(position, te);
                     }
                 }
             }
-            sectionsMs[sectionIndex] = System.currentTimeMillis() - sectionMs;
+
+
         }
 
 
@@ -466,7 +467,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         for (int i = 0; i < chunkBiomes.length && i < biomes.length; i++)
             if (biomes[i] != -1)
                 chunkBiomes[i] = biomes[i];
-        Arrays.fill(biomes, (byte) -1);
+        System.arraycopy(BIOME_DEFAULT, 0, biomes, 0, biomes.length);
 
         //Rem more tiles (from completely edited sections)
         if (remMask != 0) {
@@ -480,21 +481,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
 
         //heightmap/lighting
-        long ms = System.currentTimeMillis();
         nmsChunk.initLighting();
-        ms = System.currentTimeMillis() - ms;
-
-
-        totalMs = System.currentTimeMillis() - totalMs;
-//        StringBuilder b = new StringBuilder();
-//        b.append("Chunk total: ").append(totalMs).append("ms").append("\n");
-//        for(int i = 0; i < 16; i++) {
-//            b.append(sectionsMs[i]).append(" ");
-//        }
-//        System.out.println(b.toString());
 
         //Cleanup
         optimizedSections = new DataPaletteBlock[16];
+
+        //ms = System.nanoTime() - ms;
+        //System.out.println("Chunk update took: " + ms + "ns comp edits: " + compEdited);
     }
 
     @Override

@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ChunkQueue implements Listener {
-    public static int WORK_TIME_PER_TICK_MS = 12;
+    public static int WORK_TIME_PER_TICK_MS = 20;
     public static int THREADS = Runtime.getRuntime().availableProcessors();
     ExecutorService executor = Executors.newCachedThreadPool();
     boolean useGC = false;
@@ -26,6 +26,8 @@ public class ChunkQueue implements Listener {
     private long lastGC = System.currentTimeMillis();
     private boolean working;
     private final ReentrantLock listLock = new ReentrantLock(true);
+    private long lastTick = -1;
+    private long accTime = 0L;
 
     public ChunkQueue(Plugin plugin) {
         this.plugin = plugin;
@@ -74,7 +76,7 @@ public class ChunkQueue implements Listener {
                 int amount = 0;
                 long ms1 = System.currentTimeMillis();
                 List<CompletableFuture<AsyncChunk>> futures = new ArrayList<>();
-                while (System.currentTimeMillis() - ms < time) {
+                while (System.currentTimeMillis() - ms < time && !shouldStop()) {
                     Map<AsyncChunk, Integer> masks = new ConcurrentHashMap<>();
 
                     List<AsyncChunk> todo = new ArrayList<>();
@@ -83,7 +85,7 @@ public class ChunkQueue implements Listener {
                     //Lock it so that while we schedule the tasks, the list isn't changed
                     listLock.lock();
                     try {
-                        for (int i = 0; i < THREADS && chunks.size() > 0 && System.currentTimeMillis() - ms < time; i++) { // Spawn THREAD threads
+                        for (int i = 0; i < THREADS && chunks.size() > 0 && System.currentTimeMillis() - ms < time && !shouldStop(); i++) { // Spawn THREAD threads
                             AsyncChunk chunk = chunks.get(0).getChunk();
                             callbacks.addAll(chunks.get(0).getCallbacks());
                             chunks.remove(0);
@@ -105,9 +107,7 @@ public class ChunkQueue implements Listener {
                         ForkJoinPool.commonPool().execute(() -> {
                             synchronized (chunk) { //synchronized so the editedSections is correct
                                 masks.put(chunk, chunk.getEditedSections());
-                                long ms2 = System.currentTimeMillis();
                                 chunk.call();
-                                ms2 = System.currentTimeMillis() - ms2;
                             }
                             future.complete(chunk);
                         });
@@ -121,13 +121,12 @@ public class ChunkQueue implements Listener {
                     while (futureIterator.hasNext()) {
                         future = futureIterator.next();
                         AsyncChunk chunk = future.get();
-                        long ms2 = System.currentTimeMillis();
                         chunk.end(masks.get(chunk));
-                        ms2 = System.currentTimeMillis() - ms2;
                         futureIterator.remove();
                     }
                 }
-                ms1 = System.currentTimeMillis() - ms1;
+
+                accTime += (System.currentTimeMillis() - ms1);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -143,7 +142,11 @@ public class ChunkQueue implements Listener {
                 useGC = false;
                 lastGC = System.currentTimeMillis();
             }
+
+            accTime = 0;
         }
+
+        lastTick = System.currentTimeMillis();
 
         return callbacks;
     }
@@ -280,5 +283,13 @@ public class ChunkQueue implements Listener {
         ArrayList<QueuedChunk> queuedChunks = new ArrayList<>(queue);
         listLock.unlock();
         return queuedChunks;
+    }
+
+    private boolean shouldStop() {
+        if(this.lastTick == -1) {
+            this.lastTick = System.currentTimeMillis();
+            return false;
+        }
+        return System.currentTimeMillis() - lastTick + WORK_TIME_PER_TICK_MS < 50;
     }
 }
