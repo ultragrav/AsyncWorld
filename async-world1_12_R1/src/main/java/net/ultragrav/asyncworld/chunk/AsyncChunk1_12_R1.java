@@ -1,14 +1,12 @@
 package net.ultragrav.asyncworld.chunk;
 
+import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
-import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.utils.IntVector3D;
-import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
-import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
 
 import java.lang.reflect.Field;
 import java.util.*;

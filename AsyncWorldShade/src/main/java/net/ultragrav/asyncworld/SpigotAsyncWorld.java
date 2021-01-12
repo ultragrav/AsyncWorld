@@ -246,17 +246,52 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 }
                 return null;
             }));
-            while (!pool.isQuiescent())
-                pool.awaitQuiescence(1, TimeUnit.SECONDS);
+            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS));
+
             pool.shutdown();
         } else {
-            for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
-                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
-                    AsyncChunk chunk = getChunk(x >> 4, z >> 4);
-                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
-                        int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
-                        IntVector3D vec = new IntVector3D(x, y, z);
-                        action.accept(vec, block, tiles.get(vec));
+            int minX = region.getMinimumPoint().getBlockX();
+            int maxX = region.getMaximumPoint().getBlockZ();
+            int minZ = region.getMinimumPoint().getBlockX();
+            int maxZ = region.getMaximumPoint().getBlockZ();
+
+            int minChunkX = minX >> 4;
+            int maxChunkX = (int) Math.ceil(maxX / 16.);
+            int minChunkZ = minZ >> 4;
+            int maxChunkZ = (int) Math.ceil(maxZ / 16.);
+
+            int startX = minX % 16;
+            int startZ = minZ % 16;
+            int endX = maxX % 16;
+            int endZ = maxZ % 16;
+
+            for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                    AsyncChunk chunk = getChunk(chunkX, chunkZ);
+                    int xs = 0x0;
+                    int zs = 0x0;
+                    if (chunkX == 0) {
+                        xs = startX;
+                    }
+                    if (chunkZ == 0) {
+                        zs = startZ;
+                    }
+                    int xe = 0xF;
+                    int ze = 0xF;
+                    if (chunkX == maxChunkX) {
+                        xe = endX;
+                    }
+                    if (chunkZ == maxChunkZ) {
+                        ze = endZ;
+                    }
+                    for (int x = xs; x <= xe; x ++) {
+                        for (int z = zs; z <= ze; z ++) {
+                            for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
+                                int block = chunk.getCombinedBlockSync(x & 15, y, z & 15);
+                                IntVector3D vec = new IntVector3D(x, y, z);
+                                action.accept(vec, block, tiles.get(vec));
+                            }
+                        }
                     }
                 }
             }
