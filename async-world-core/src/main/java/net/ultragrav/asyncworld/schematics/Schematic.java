@@ -136,12 +136,8 @@ public class Schematic implements GravSerializable {
         squareSize = dimensions.getX() * dimensions.getZ();
         lineSize = dimensions.getZ();
 
-        AtomicInteger count = new AtomicInteger();
-
         world.asyncForAllInRegion(region, (loc, block, tag, lighting) -> {
             IntVector3D relLoc = loc.subtract(min);
-
-            count.getAndIncrement();
 
             if (block == ignoreBlock)
                 block = -1;
