@@ -537,7 +537,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         chunk.getTileEntities().forEach((p, t) -> {
             if (t == null)
                 return;
-            if(((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
+            if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
                 return;
             this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(t.save(new NBTTagCompound())));
         });

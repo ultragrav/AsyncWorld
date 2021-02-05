@@ -22,6 +22,7 @@
         <module>async-world1_12_R1</module>
         <module>async-world1_15_R1</module>
         <module>AsyncWorldShade</module>
+        <module>AsyncWorldTest</module>
     </modules>
 
     <repositories>
