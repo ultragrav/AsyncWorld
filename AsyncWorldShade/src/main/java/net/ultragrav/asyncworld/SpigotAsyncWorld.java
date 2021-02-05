@@ -1,5 +1,6 @@
 package net.ultragrav.asyncworld;
 
+import asyncworld.chunk.AsyncChunk1_15_R1;
 import lombok.Getter;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
 import net.ultragrav.asyncworld.nbt.TagCompound;
@@ -48,9 +49,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
         String[] parts = name.split("\\.");
         serverVersion = parts[3];
         if (this.getServerVersion().startsWith("v1_12"))
-            sV = 1;
+            sV = 12;
         if (this.getServerVersion().startsWith("v1_8"))
-            sV = 0;
+            sV = 8;
+        if (this.getServerVersion().startsWith("v1_15"))
+            sV = 15;
     }
 
     @Override
@@ -65,10 +68,12 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     protected AsyncChunk getNewChunk(int cx, int cz) {
-        if (sV == 1)
-            return new AsyncChunk1_12_R1(this, new ChunkLocation(this, cx, cz));
-//        if (sV == 0)
-//            return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
+        switch (sV) {
+            case 12:
+                return new AsyncChunk1_12_R1(this, new ChunkLocation(this, cx, cz));
+            case 15:
+                return new AsyncChunk1_15_R1(this, new ChunkLocation(this, cx, cz));
+        }
         return null;
     }
 

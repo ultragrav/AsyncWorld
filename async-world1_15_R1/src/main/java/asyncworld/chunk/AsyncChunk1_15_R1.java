@@ -260,6 +260,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
                     IBlockData dat = paletteBlock.a(x, y, z);
                     blocks[i] = (byte) dat.h();
                     data[i] = (byte) dat.b((IBlockAccess) null, null);
+                    i ++;
                 }
             }
         }
@@ -364,7 +365,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
         ChunkCoordIntPair coords = new ChunkCoordIntPair(loc.getX(), loc.getZ());
 
         PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getChunkProvider().playerChunkMap;
-        PlayerChunk playerChunk = map.visibleChunks.get((long)loc.getX() + 2147483647L | (long)loc.getZ() + 2147483647L << 32); // TODO: Verify
+        PlayerChunk playerChunk = map.visibleChunks.get(coords.pair()); // TODO: Verify
         if (playerChunk == null)
             return;
         playerChunk.players.a(coords, true).forEach(p -> { // TODO: Might have to change boolean and/or coords
