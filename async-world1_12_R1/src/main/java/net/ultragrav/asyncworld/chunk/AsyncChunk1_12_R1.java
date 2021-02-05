@@ -107,7 +107,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         tilesToRemove.forEach((bp, te) -> {
             nmsChunk.world.s(bp); //Remove it from the world
             nmsChunk.getTileEntities().remove(bp); //Remove it from the chunk
-            te.z(); //Got no idea what this does but it's needed
+            te.z(); // Set removed to true
             te.invalidateBlockCache(); //Set tile entity's parent block to null
         });
 
