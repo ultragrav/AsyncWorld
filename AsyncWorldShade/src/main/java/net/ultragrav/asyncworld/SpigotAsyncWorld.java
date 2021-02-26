@@ -517,13 +517,13 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
         Vector3D max = region.getMaximumPoint();
         Vector3D min = region.getMinimumPoint();
-        int minI = min.getBlockX() >> 4;
-        int minJ = min.getBlockZ() >> 4;
-        int maxI = max.getBlockX() >> 4;
-        int maxJ = max.getBlockZ() >> 4;
+        int minX = min.getBlockX() >> 4;
+        int minZ = min.getBlockZ() >> 4;
+        int maxX = max.getBlockX() >> 4;
+        int maxZ = max.getBlockZ() >> 4;
 
-        for (int i = minI; i <= maxI; i++)
-            for (int j = minJ; j <= maxJ; j++)
+        for (int i = minX; i <= maxX; i++)
+            for (int j = minZ; j <= maxZ; j++)
                 chunks.add(getChunk(i, j));
 
         if (ensureLoaded)
@@ -540,15 +540,24 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
             chunks.forEach(chunk -> pool.submit(() -> {
 
-                if (chunkPreprocessor != null)
-                    chunkPreprocessor.accept(chunk);
+                if (chunkPreprocessor != null) {
+                    try {
+                        chunkPreprocessor.accept(chunk);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
 
                 int bx = chunk.getLoc().getX() << 4;
                 int bz = chunk.getLoc().getZ() << 4;
                 for (int x = Math.max(bx, minBlockX) & 15; x < 16 && x + bx <= maxBlockX; x++) {
                     for (int z = Math.max(bz, minBlockZ) & 15; z < 16 && z + bz <= maxBlockZ; z++) {
                         for (int y = minBlockY; y <= maxBlockY; y++) {
-                            action.accept(chunk, x + bx, y, z + bz);
+                            try {
+                                action.accept(chunk, x + bx, y, z + bz);
+                            } catch(Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -566,7 +575,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
                     AsyncChunk chunk = getChunk(x >> 4, z >> 4);
                     for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
-                        action.accept(chunk, x, y, z);
+                        try {
+                            action.accept(chunk, x, y, z);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -604,7 +617,13 @@ public class SpigotAsyncWorld extends AsyncWorld {
             while (it.hasNext()) {
                 for (int i = 0; i < parallelism && it.hasNext(); i++) {
                     AsyncChunk chunk = it.next();
-                    Runnable runnable = () -> action.accept(chunk);
+                    Runnable runnable = () -> {
+                        try {
+                            action.accept(chunk);
+                        } catch(Exception e) {
+                            e.printStackTrace();
+                        }
+                    };
                     pool.submit(runnable);
                 }
             }
