@@ -1,18 +1,20 @@
-package net.ultragrav.asyncworld.chunk;
+package asyncworld.chunk;
 
-import net.minecraft.server.v1_12_R1.*;
+import net.minecraft.server.v1_15_R1.*;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.nbt.*;
+import net.ultragrav.asyncworld.nbt.Tag;
 import net.ultragrav.utils.IntVector3D;
-import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
+import org.bukkit.craftbukkit.v1_15_R1.CraftChunk;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.lang.reflect.Field;
 import java.util.*;
 
-public class AsyncChunk1_12_R1 extends AsyncChunk {
-    public AsyncChunk1_12_R1(AsyncWorld parent, ChunkLocation loc) {
+public class AsyncChunk1_15_R1 extends AsyncChunk {
+    public AsyncChunk1_15_R1(AsyncWorld parent, ChunkLocation loc) {
         super(parent, loc);
     }
 
@@ -65,7 +67,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     protected void optimizeSection(int index, GUChunkSection section) {
-        DataPaletteBlock palette = new DataPaletteBlock();
+        /*DataPaletteBlock palette = new DataPaletteBlock(new DataPaletteLinear(4, this));
         int airCount = 0;
         for (int i = 0, length = section.contents.length; i < length; i++) {
             short block = section.contents[i];
@@ -76,7 +78,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             palette.setBlock(getLX(i), getLY(i), getLZ(i), Block.getByCombinedId(block));
         }
         this.airCount[index] = airCount;
-        optimizedSections[index] = palette;
+        optimizedSections[index] = palette;*/ // TODO: DataPaletteBlock changes
     }
 
     public static void setCount(int tickingBlockCount, int nonEmptyBlockCount, ChunkSection section) throws NoSuchFieldException, IllegalAccessException {
@@ -107,7 +109,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         tilesToRemove.forEach((bp, te) -> {
             nmsChunk.world.s(bp); //Remove it from the world
             nmsChunk.getTileEntities().remove(bp); //Remove it from the chunk
-            te.z(); // Set removed to true
+            te.ab_(); // set isRemoved to true
             te.invalidateBlockCache(); //Set tile entity's parent block to null
         });
 
@@ -137,26 +139,28 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public int syncGetEmittedLight(int x, int y, int z) {
-        validateCachedChunk();
+        /*validateCachedChunk();
         if (nmsCachedChunk == null)
             return 0;
         int sectionIndex = y >> 4;
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
-        return nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
+        return nmsCachedChunk.getSections()[sectionIndex].().a(x, y & 15, z);*/
+        throw new NotImplementedException();
     }
 
     @Override
     public int syncGetSkyLight(int x, int y, int z) {
-        validateCachedChunk();
+        /*validateCachedChunk();
         if (nmsCachedChunk == null)
             return 0;
         int sectionIndex = y >> 4;
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
-        return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
+        return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);*/
+        throw new NotImplementedException();
     }
 
     @Override
@@ -169,31 +173,33 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             return 0;
         }
         IBlockData data = nmsCachedChunk.getSections()[sectionIndex].getBlocks().a(x, y & 15, z);
-        return data.d() << 4 | data.c();
+        return data.b((IBlockAccess) null, new BlockPosition(x, y & 15, z)) << 4 | data.h(); // TODO: Verify correctness
     }
 
     @Override
     public void syncSetEmittedLight(int x, int y, int z, int value) {
-        validateCachedChunk();
+        /*validateCachedChunk();
         if (nmsCachedChunk == null)
             return;
         int sectionIndex = y >> 4;
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
-            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4);
         }
-        nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
+        nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);*/
+        throw new NotImplementedException();
     }
 
     @Override
     public void syncSetSkyLight(int x, int y, int z, int value) {
-        validateCachedChunk();
+        /*validateCachedChunk();
         if (nmsCachedChunk == null)
             return;
         int sectionIndex = y >> 4;
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
-            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4);
         }
-        nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
+        nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);*/
+        throw new NotImplementedException();
     }
 
     @Override
@@ -229,11 +235,12 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public int[] syncGetHeightMap() {
-        Chunk chunk = getNmsChunk();
+        /*Chunk chunk = getNmsChunk();
 
         int[] arr = new int[chunk.heightMap.length];
         System.arraycopy(chunk.heightMap, 0, arr, 0, arr.length);
-        return arr;
+        return arr;*/
+        throw new NotImplementedException(); // TODO: Type of heightMap is different in 1.15, may need a wrapper
     }
 
     @Override
@@ -244,29 +251,45 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (sect == null)
             return;
 
-        sect.getBlocks().exportData(blocks, new NibbleArray(data));
+        DataPaletteBlock<IBlockData> paletteBlock = sect.getBlocks();
+
+        int i = 0;
+        for (int y = 0; y < 256; y ++) { // The loop order here is the same as the order of items within the paletteBlock
+            for (int z = 0; z < 16; z ++) {
+                for (int x = 0; x < 16; x++) {
+                    IBlockData dat = paletteBlock.a(x, y, z);
+                    blocks[i] = (byte) dat.h();
+                    data[i] = (byte) dat.b((IBlockAccess) null, null);
+                    i ++;
+                }
+            }
+        }
+
+        //sect.getBlocks().exportData(blocks, new NibbleArray(data));
     }
 
     @Override
     public byte[] syncGetEmittedLight(int section) {
-        Chunk chunk = getNmsChunk();
+        /*Chunk chunk = getNmsChunk();
         ChunkSection sect = chunk.getSections()[section];
         if (sect == null)
             return null;
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getEmittedLightArray().asBytes(), 0, arr, 0, arr.length);
-        return arr;
+        return arr;*/
+        throw new NotImplementedException();
     }
 
     @Override
     public byte[] syncGetSkyLight(int section) {
-        Chunk chunk = getNmsChunk();
+        /*Chunk chunk = getNmsChunk();
         ChunkSection sect = chunk.getSections()[section];
         if (sect == null)
             return null;
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
-        return arr;
+        return arr;*/
+        throw new NotImplementedException();
     }
 
     @Override
@@ -291,8 +314,12 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public byte[] syncGetBiomes() {
         Chunk chunk = getNmsChunk();
-        byte[] arr = new byte[chunk.getBiomeIndex().length];
-        System.arraycopy(chunk.getBiomeIndex(), 0, arr, 0, arr.length);
+        int[] dat = chunk.getBiomeIndex().a();
+        byte[] arr = new byte[dat.length];
+        for (int i = 0; i < dat.length; i++) {
+            arr[i] = (byte) dat[i];
+        } // TODO: Verify and correct
+        //System.arraycopy(dat, 0, arr, 0, arr.length);
         return arr;
     }
 
@@ -317,7 +344,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public void sendPackets(int mask) {
-
         ChunkLocation loc = this.getLoc();
         Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
         PacketPlayOutMapChunk packet;
@@ -336,11 +362,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         List<Packet<?>> tilePackets = new ArrayList<>();
         nmsChunk.getTileEntities().forEach((key, value) -> tilePackets.add(value.getUpdatePacket()));
 
-        PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getPlayerChunkMap();
-        PlayerChunk playerChunk = map.getChunk(loc.getX(), loc.getZ());
+        ChunkCoordIntPair coords = new ChunkCoordIntPair(loc.getX(), loc.getZ());
+
+        PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getChunkProvider().playerChunkMap;
+        PlayerChunk playerChunk = map.visibleChunks.get(coords.pair()); // TODO: Verify
         if (playerChunk == null)
             return;
-        playerChunk.c.forEach(p -> {
+        playerChunk.players.a(coords, true).forEach(p -> { // TODO: Might have to change boolean and/or coords
             p.playerConnection.sendPacket(packet);
             if (secondMapPacket != null) {
                 p.playerConnection.sendPacket(secondMapPacket);
@@ -356,8 +384,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk nmsChunk = getNmsChunk();
         nmsCachedChunk = null;
 
-        nmsChunk.mustSave = true;
-        nmsChunk.f(true);
+        nmsChunk.mustNotSave = false;
+        nmsChunk.d(true); // If this doesn't work, try different method with boolean
 
         int bx = loc.getX() << 4;
         int bz = loc.getZ() << 4;
@@ -396,12 +424,12 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             if (completelyEdited) {
                 compEdited++;
                 if (section == null)
-                    section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
-                System.arraycopy(guChunkSection.emittedLight, 0,
+                    section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4);
+                /*System.arraycopy(guChunkSection.emittedLight, 0,
                         section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
 
                 if (this.isFullSkyLight())
-                    Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
+                    Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);*/
 
                 if (optimizedSections[sectionIndex] != null) {
                     try {
@@ -442,10 +470,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     int part = index & 1;
                     index >>>= 1;
                     int emittedLight = (guChunkSection.emittedLight[index] >>> (part << 2) & 0xF);
-                    section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
+                    /*section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
 
                     if (this.fullSkyLight)
-                        section.getSkyLightArray().a(lx, ly, lz, 0xF);
+                        section.getSkyLightArray().a(lx, ly, lz, 0xF);*/ // TODO!!!!
                 }
 
                 //Remove tile entity
@@ -457,17 +485,15 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     }
                 }
             }
-
-
         }
 
 
         //Biomes
-        byte[] chunkBiomes = nmsChunk.getBiomeIndex();
+        /*byte[] chunkBiomes = nmsChunk.getBiomeIndex().a();
         for (int i = 0; i < chunkBiomes.length && i < biomes.length; i++)
             if (biomes[i] != -1)
                 chunkBiomes[i] = biomes[i];
-        System.arraycopy(BIOME_DEFAULT, 0, biomes, 0, biomes.length);
+        System.arraycopy(BIOME_DEFAULT, 0, biomes, 0, biomes.length);*/ // TODO: Biomes
 
         //Rem more tiles (from completely edited sections)
         if (remMask != 0) {
@@ -481,7 +507,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         }
 
         //heightmap/lighting
-        nmsChunk.initLighting();
+        /*nmsChunk.getWorld().getChunkProvider().getLightEngine()..initLighting();*/
+        // TODO: Lighting
 
         //Cleanup
         optimizedSections = new DataPaletteBlock[16];
@@ -495,7 +522,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
 
-        //Clear tiles in the specified sections
         Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
         tiles.forEach((p, t) -> {
             if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
@@ -507,7 +533,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 continue;
 
             ChunkSection section = sections[sectionIndex];
-            if (section == null) { //Section is null (filled with air)
+            if (section == null) {
                 GUChunkSection section1 = this.chunkSections[sectionIndex];
                 if (section1 == null)
                     section1 = this.chunkSections[sectionIndex] = new GUChunkSection();
@@ -528,16 +554,13 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 this.writeBlock(sectionIndex, i, (dat << 12 | id) & 0xFFFF, false);
             }
 
-            //Emitted light
-            System.arraycopy(section.getEmittedLightArray().asBytes(), 0, chunkSections[sectionIndex].emittedLight, 0, section.getEmittedLightArray().asBytes().length);
+            //Emitted light TODO Emitted light
+            // System.arraycopy(section.getEmittedLightArray().asBytes(), 0, chunkSections[sectionIndex].emittedLight, 0, section.getEmittedLightArray().asBytes().length);
         }
 
         //Do this after writing blocks because writing blocks may set tile entities
-        //Load tile entities in specified sections
         chunk.getTileEntities().forEach((p, t) -> {
             if (t == null)
-                return;
-            if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
                 return;
             this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(t.save(new NBTTagCompound())));
         });
@@ -561,14 +584,14 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     public static Tag fromNMSTag(NBTBase base) {
         if (base instanceof NBTTagCompound) {
             TagCompound compound = new TagCompound();
-            for (String key : ((NBTTagCompound) base).c()) {
+            for (String key : ((NBTTagCompound) base).getKeys()) {
                 compound.getData().put(key, fromNMSTag(((NBTTagCompound) base).get(key)));
             }
             return compound;
         } else if (base instanceof NBTTagList) {
             TagList list = new TagList();
             for (int i = 0; i < ((NBTTagList) base).size(); i++) {
-                list.getData().add(fromNMSTag(((NBTTagList) base).i(i)));
+                list.getData().add(fromNMSTag(((NBTTagList) base).get(i)));
             }
             return list;
         } else if (base instanceof NBTTagLongArray) {
@@ -579,25 +602,25 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 return new TagLongArray(new long[0]);
             }
         } else if (base instanceof NBTTagShort) {
-            return new TagShort(((NBTTagShort) base).f());
+            return new TagShort(((NBTTagShort) base).asShort());
         } else if (base instanceof NBTTagLong) {
-            return new TagLong(((NBTTagLong) base).d());
+            return new TagLong(((NBTTagLong) base).asLong());
         } else if (base instanceof NBTTagInt) {
-            return new TagInt(((NBTTagInt) base).e());
+            return new TagInt(((NBTTagInt) base).asInt());
         } else if (base instanceof NBTTagByte) {
-            return new TagByte(((NBTTagByte) base).g());
+            return new TagByte(((NBTTagByte) base).asByte());
         } else if (base instanceof NBTTagIntArray) {
-            return new TagIntArray(((NBTTagIntArray) base).d());
+            return new TagIntArray(((NBTTagIntArray) base).getInts());
         } else if (base instanceof NBTTagDouble) {
             return new TagDouble(((NBTTagDouble) base).asDouble());
         } else if (base instanceof NBTTagByteArray) {
-            return new TagByteArray(((NBTTagByteArray) base).c());
+            return new TagByteArray(((NBTTagByteArray) base).getBytes());
         } else if (base instanceof NBTTagEnd) {
             return new TagEnd();
         } else if (base instanceof NBTTagFloat) {
-            return new TagFloat(((NBTTagFloat) base).i());
+            return new TagFloat(((NBTTagFloat) base).asFloat());
         } else if (base instanceof NBTTagString) {
-            return new TagString(((NBTTagString) base).c_());
+            return new TagString(base.asString());
         }
         throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
     }
@@ -614,19 +637,19 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             tags.forEach((k, t) -> compound.set(k, fromGenericTag(t)));
             return compound;
         } else if (tag instanceof TagShort) {
-            return new NBTTagShort(((TagShort) tag).getData());
+            return NBTTagShort.a(((TagShort) tag).getData());
         } else if (tag instanceof TagLong) {
-            return new NBTTagLong(((TagLong) tag).getData());
+            return NBTTagLong.a(((TagLong) tag).getData());
         } else if (tag instanceof TagLongArray) {
             return new NBTTagLongArray(((TagLongArray) tag).getData());
         } else if (tag instanceof TagInt) {
-            return new NBTTagInt(((TagInt) tag).getData());
+            return NBTTagInt.a(((TagInt) tag).getData());
         } else if (tag instanceof TagByte) {
-            return new NBTTagByte(((TagByte) tag).getData());
+            return NBTTagByte.a(((TagByte) tag).getData());
         } else if (tag instanceof TagByteArray) {
             return new NBTTagByteArray(((TagByteArray) tag).getData());
         } else if (tag instanceof TagString) {
-            return new NBTTagString(((TagString) tag).getData());
+            return NBTTagString.a(((TagString) tag).getData());
         } else if (tag instanceof TagList) {
             NBTTagList list = new NBTTagList();
             ((TagList) tag).getData().forEach(t -> list.add(fromGenericTag(t)));
@@ -634,9 +657,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         } else if (tag instanceof TagIntArray) {
             return new NBTTagIntArray(((TagIntArray) tag).getData());
         } else if (tag instanceof TagFloat) {
-            return new NBTTagFloat(((TagFloat) tag).getData());
+            return NBTTagFloat.a(((TagFloat) tag).getData());
         } else if (tag instanceof TagDouble) {
-            return new NBTTagDouble(((TagDouble) tag).getData());
+            return NBTTagDouble.a(((TagDouble) tag).getData());
         }
         throw new IllegalArgumentException("Tag is not of a recognized type (" + tag.getClass().getName() + ")");
     }

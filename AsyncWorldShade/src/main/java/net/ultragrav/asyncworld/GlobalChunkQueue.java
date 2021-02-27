@@ -7,6 +7,9 @@ public class GlobalChunkQueue extends ChunkQueue {
 
     public GlobalChunkQueue(Plugin plugin) {
         super(plugin);
+        if (instance != null) {
+            instance.setWorking(false);
+        }
         instance = this;
     }
 }

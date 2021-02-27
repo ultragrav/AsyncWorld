@@ -1,0 +1,4 @@
+name: AWTest
+main: net.ultragrav.asyncworld.test.AWTest
+author: "asdf"
+version: -1.0.0

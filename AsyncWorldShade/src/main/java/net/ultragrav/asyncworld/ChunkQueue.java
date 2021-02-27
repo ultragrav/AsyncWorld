@@ -135,6 +135,10 @@ public class ChunkQueue implements Listener {
             //Got rid of cancelTask so this runs every tick
             //That way if a chunk is scheduled it could be updated on the same tick instead of 1 tick later
 
+            if (!working) {
+                cancelTask();
+            }
+
             //GC
             if (Runtime.getRuntime().freeMemory() / (double) Runtime.getRuntime().totalMemory() > 0.88D
                     || System.currentTimeMillis() - lastGC > 20000 || useGC) {
@@ -274,7 +278,7 @@ public class ChunkQueue implements Listener {
         return this.working;
     }
 
-    private synchronized void setWorking(boolean value) {
+    public synchronized void setWorking(boolean value) {
         this.working = value;
     }
 
