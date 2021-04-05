@@ -1,5 +1,5 @@
 # AsyncWorld
-An asynchronous world modification utility for Minecraft
+An asynchronous world modification and in-memory world creation utility for Minecraft
 ## Usage
 ### Running as an API (Requires installing the AsyncWorld plugin)
 
