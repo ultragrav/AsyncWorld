@@ -170,9 +170,21 @@ public class CustomWorldChunkSnap implements GravSerializable {
             //Sync
             AtomicReference<List<TagCompound>> tiles = new AtomicReference<>();
             AtomicReference<List<TagCompound>> entities = new AtomicReference<>();
+
+            byte[][] blocks = new byte[16][], blockData = new byte[16][];
+            short sectionBitMask = chunk.getSectionBitMask();
+
             Runnable runnable = () -> {
                 tiles.set(new ArrayList<>(chunk.syncGetTiles().values()));
                 entities.set(chunk.syncGetEntities());
+
+                for (int i = 0; i < 16; i++) {
+                    if (((sectionBitMask >>> i) & 1) == 0)
+                        continue;
+                    byte[] blocksS = blocks[i] = new byte[4096];
+                    byte[] blockDataS = blockData[i] = new byte[2048];
+                    chunk.syncGetBlocksAndData(blocksS, blockDataS, i);
+                }
             };
 
             CompletableFuture<Void> f = new CompletableFuture<>();
@@ -186,15 +198,11 @@ public class CustomWorldChunkSnap implements GravSerializable {
             //Possibly async
             int[] heightMap = chunk.syncGetHeightMap();
             byte[] biomes = chunk.syncGetBiomes();
-            byte[][] blocks = new byte[16][], blockData = new byte[16][], emittedLight = new byte[16][], skyLight = new byte[16][];
-            short sectionBitMask = chunk.getSectionBitMask();
+            byte[][] emittedLight = new byte[16][], skyLight = new byte[16][];
             for (int i = 0; i < 16; i++) {
                 if (((sectionBitMask >>> i) & 1) == 0)
                     continue;
 
-                byte[] blocksS = blocks[i] = new byte[4096];
-                byte[] blockDataS = blockData[i] = new byte[2048];
-                chunk.syncGetBlocksAndData(blocksS, blockDataS, i);
                 emittedLight[i] = chunk.syncGetEmittedLight(i);
                 skyLight[i] = chunk.syncGetSkyLight(i);
             }

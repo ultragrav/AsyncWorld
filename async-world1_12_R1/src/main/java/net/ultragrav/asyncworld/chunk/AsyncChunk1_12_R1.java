@@ -2,6 +2,7 @@ package net.ultragrav.asyncworld.chunk;
 
 import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncChunk;
+import net.ultragrav.asyncworld.AsyncChunk.GUChunkSection;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.nbt.*;
@@ -495,6 +496,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         Chunk chunk = getNmsChunk();
         ChunkSection[] sections = chunk.getSections();
 
+        long time = System.currentTimeMillis();
+
         //Clear tiles in the specified sections
         Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
         tiles.forEach((p, t) -> {
@@ -507,25 +510,27 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 continue;
 
             ChunkSection section = sections[sectionIndex];
+
+            GUChunkSection section1 = this.chunkSections[sectionIndex];
+            if (section1 == null)
+                section1 = this.chunkSections[sectionIndex] = new GUChunkSection();
             if (section == null) { //Section is null (filled with air)
-                GUChunkSection section1 = this.chunkSections[sectionIndex];
-                if (section1 == null)
-                    section1 = this.chunkSections[sectionIndex] = new GUChunkSection();
                 System.arraycopy(AsyncChunk.airFilled, 0, section1.contents, 0, AsyncChunk.airFilled.length);
                 continue;
             }
 
+
             for (int i = 0; i < 4096; i++) {
-                int x = getLX(i);
-                int y = getLY(i);
-                int z = getLZ(i);
+                int x = CACHE_X[i];
+                int y = CACHE_Y[i];
+                int z = CACHE_Z[i];
 
                 int block = Block.REGISTRY_ID.getId(section.getBlocks().a(x, y, z));
 
                 short id = (short) (block >> 4 & 0xFF);
                 if (id == 0) id = -1;
                 byte dat = (byte) (block & 0xF);
-                this.writeBlock(sectionIndex, i, (dat << 12 | id) & 0xFFFF, false);
+                section1.contents[i] = (short) ((dat << 12 | id) & 0xFFFF);
             }
 
             //Emitted light
@@ -542,6 +547,8 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(t.save(new NBTTagCompound())));
         });
 
+        time = System.currentTimeMillis() - time;
+        //System.out.println("Time: " + time + "ms");
     }
 
     public static TagCompound fromNMSCompound(NBTTagCompound compound) {
