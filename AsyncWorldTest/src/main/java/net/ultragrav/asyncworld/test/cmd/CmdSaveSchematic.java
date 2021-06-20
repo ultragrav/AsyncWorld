@@ -7,11 +7,13 @@ import net.ultragrav.asyncworld.test.WorldEditPlayerManager;
 import net.ultragrav.asyncworld.test.WorldEditPlayerState;
 import net.ultragrav.command.UltraCommand;
 import net.ultragrav.command.provider.impl.StringProvider;
+import net.ultragrav.serializer.compressors.StandardCompressor;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class CmdSaveSchematic extends AWCommand {
@@ -48,7 +50,7 @@ public class CmdSaveSchematic extends AWCommand {
 
         Schematic schem = new Schematic(origin, new SpigotAsyncWorld(region.getWorld()), region, ignoredBlock);
         try {
-            schem.save(f);
+            schem.save(f, StandardCompressor.instance);
             tell("&6&lAsyncWorld&8 > &aSuccess! Custom Origin: " + origin.getX() + " " + origin.getY() + " " + origin.getZ() + (ignoredBlock != -1 ? " ignoredBlock: " + args.get(2) + " (" + ignoredBlock + ")" : ""));
         } catch (IOException e) {
             e.printStackTrace();
