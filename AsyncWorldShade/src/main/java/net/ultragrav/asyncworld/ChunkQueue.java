@@ -76,7 +76,6 @@ public class ChunkQueue implements Listener {
             }
         } else {
             try {
-                System.out.println("SDIOAJDOJASD________");
                 int amount = 0;
                 long ms1 = System.currentTimeMillis();
                 List<CompletableFuture<AsyncChunk>> futures = new ArrayList<>();
@@ -102,7 +101,6 @@ public class ChunkQueue implements Listener {
 
                     //Schedule
                     todo.removeIf(chunk -> {
-                        System.out.println("Starting chunk");
                         chunk.start();
 
                         CompletableFuture<AsyncChunk> future = new CompletableFuture<>();
@@ -113,7 +111,6 @@ public class ChunkQueue implements Listener {
                                 System.out.println("A");
                                 synchronized (chunk) { //synchronized so the editedSections is correct
                                     masks.put(chunk, chunk.getEditedSections());
-                                    System.out.println("Calling chunk at " + chunk.getLoc().getX() + " " + chunk.getLoc().getZ());
                                     chunk.call();
                                 }
                             } catch (Exception e) {
@@ -313,6 +310,6 @@ public class ChunkQueue implements Listener {
             this.lastTick = System.currentTimeMillis();
             return false;
         }
-        return System.currentTimeMillis() - lastTick + WORK_TIME_PER_TICK_MS > 50;
+        return false;
     }
 }
