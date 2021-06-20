@@ -438,6 +438,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
                 IBlockData bd = Block.getByCombinedId(block & 0xFFFF);
                 section.setType(lx, ly, lz, bd);
+                System.out.println("Set type to " + bd.toString());
                 if (!completelyEdited) {
                     int index = i;
                     int part = index & 1;

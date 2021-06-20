@@ -42,6 +42,7 @@ public class ChunkQueue implements Listener {
      * @return List of AsyncChunks updated and to be removed from the queue
      */
     protected List<Runnable> update(List<QueuedChunk> chunks, ReentrantLock listLock, long time) {
+
         if (chunks.size() == 0)
             return new ArrayList<>();
         long ms = System.currentTimeMillis();
@@ -75,6 +76,7 @@ public class ChunkQueue implements Listener {
             }
         } else {
             try {
+                System.out.println("SDIOAJDOJASD________");
                 int amount = 0;
                 long ms1 = System.currentTimeMillis();
                 List<CompletableFuture<AsyncChunk>> futures = new ArrayList<>();
@@ -100,6 +102,7 @@ public class ChunkQueue implements Listener {
 
                     //Schedule
                     todo.removeIf(chunk -> {
+                        System.out.println("Starting chunk");
                         chunk.start();
 
                         CompletableFuture<AsyncChunk> future = new CompletableFuture<>();
@@ -107,8 +110,10 @@ public class ChunkQueue implements Listener {
                         //NOTE this is a just the scheduling of the task, not the execution, so this doesn't take long
                         ForkJoinPool.commonPool().execute(() -> {
                             try {
+                                System.out.println("A");
                                 synchronized (chunk) { //synchronized so the editedSections is correct
                                     masks.put(chunk, chunk.getEditedSections());
+                                    System.out.println("Calling chunk at " + chunk.getLoc().getX() + " " + chunk.getLoc().getZ());
                                     chunk.call();
                                 }
                             } catch (Exception e) {
@@ -308,6 +313,6 @@ public class ChunkQueue implements Listener {
             this.lastTick = System.currentTimeMillis();
             return false;
         }
-        return System.currentTimeMillis() - lastTick + WORK_TIME_PER_TICK_MS < 50;
+        return System.currentTimeMillis() - lastTick + WORK_TIME_PER_TICK_MS > 50;
     }
 }

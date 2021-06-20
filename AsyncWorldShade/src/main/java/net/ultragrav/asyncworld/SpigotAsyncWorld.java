@@ -298,14 +298,19 @@ public class SpigotAsyncWorld extends AsyncWorld {
      */
     @Override
     public synchronized boolean syncFlush(int timeoutMs) {
-        if (!Bukkit.isPrimaryThread())
+        if (!Bukkit.isPrimaryThread()) {
+            System.out.println("Not primary thread");
             return false;
+        }
         List<AsyncChunk> edited = chunkMap.getCachedCopy();
+        System.out.println(edited.size() + " edited chunks?");
         edited.removeIf(c -> {
             c.optimize();
             return !c.isEdited();
         });
+        System.out.println("Now there is " + edited.size());
         List<QueuedChunk> queue = edited.stream().map(QueuedChunk::new).collect(Collectors.toList());
+        System.out.println("Calling updated with queue of size " + queue.size());
         chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
         this.chunkMap.clear();
         return edited.isEmpty();
