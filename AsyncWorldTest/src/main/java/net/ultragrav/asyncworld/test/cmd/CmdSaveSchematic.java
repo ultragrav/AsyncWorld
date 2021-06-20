@@ -50,7 +50,6 @@ public class CmdSaveSchematic extends AWCommand {
 
         Schematic schem = new Schematic(origin, new SpigotAsyncWorld(region.getWorld()), region, ignoredBlock);
         try {
-            schem.save(f, StandardCompressor.instance);
             tell("&6&lAsyncWorld&8 > &aSuccess! Custom Origin: " + origin.getX() + " " + origin.getY() + " " + origin.getZ() + (ignoredBlock != -1 ? " ignoredBlock: " + args.get(2) + " (" + ignoredBlock + ")" : ""));
         } catch (IOException e) {
             e.printStackTrace();
