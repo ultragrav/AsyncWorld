@@ -5,15 +5,13 @@ import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.nbt.TagCompound;
+import net.ultragrav.serializer.Compressor;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
 import net.ultragrav.serializer.compressors.ZstdCompressor;
 import net.ultragrav.utils.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,6 +66,9 @@ public class Schematic implements GravSerializable {
 
     public Schematic(File file) throws IOException {
         this(new GravSerializer(new FileInputStream(file), ZstdCompressor.instance));
+    }
+    public Schematic(InputStream is, Compressor compressor) throws IOException {
+        this(new GravSerializer(is, compressor));
     }
 
     public Schematic(IntVector3D origin, IntVector3D dimensions) {
@@ -217,10 +218,13 @@ public class Schematic implements GravSerializable {
         return new Schematic(this);
     }
 
-    public void save(File file) throws IOException {
+    public void save(OutputStream os, Compressor compressor) throws IOException {
         GravSerializer serializer = new GravSerializer();
         serialize(serializer);
-        serializer.writeToStream(new FileOutputStream(file), ZstdCompressor.instance);
+        serializer.writeToStream(os, compressor);
+    }
+    public void save(File file) throws IOException {
+        save(new FileOutputStream(file), ZstdCompressor.instance);
     }
 
     public Schematic rotate(int rotation) {
