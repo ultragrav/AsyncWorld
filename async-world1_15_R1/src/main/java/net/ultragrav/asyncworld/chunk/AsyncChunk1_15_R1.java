@@ -1,12 +1,14 @@
-package asyncworld.chunk;
+package net.ultragrav.asyncworld.chunk;
 
 import net.minecraft.server.v1_15_R1.*;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
+import net.ultragrav.asyncworld.Stringify;
 import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.asyncworld.nbt.Tag;
 import net.ultragrav.utils.IntVector3D;
+import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_15_R1.CraftChunk;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -98,6 +100,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
     @Override
     public void start() {
         getBukkitChunk().load(true);
+        validateCachedChunk();
     }
 
     @Override
@@ -365,6 +368,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
         ChunkCoordIntPair coords = new ChunkCoordIntPair(loc.getX(), loc.getZ());
 
         PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getChunkProvider().playerChunkMap;
+        Bukkit.broadcastMessage(Stringify.stringify(map.visibleChunks));
         PlayerChunk playerChunk = map.visibleChunks.get(coords.pair()); // TODO: Verify
         if (playerChunk == null)
             return;

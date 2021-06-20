@@ -5,7 +5,7 @@
     <parent>
         <artifactId>AsyncWorld</artifactId>
         <groupId>net.ultragrav</groupId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -45,12 +45,12 @@
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>Commands</artifactId>
-            <version>1.2.6</version>
+            <version>1.2.7</version>
         </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.12.2-R0.1-SNAPSHOT</version>
+            <artifactId>spigot</artifactId>
+            <version>1.8.8-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

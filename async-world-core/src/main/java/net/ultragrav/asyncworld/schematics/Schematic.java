@@ -2,6 +2,7 @@ package net.ultragrav.asyncworld.schematics;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.serializer.GravSerializable;
@@ -21,11 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+@Getter
 public class Schematic implements GravSerializable {
 
     private static final int FORMAT_VERSION = 4;
 
-    private final IntVector3D origin;
+    @Setter
+    private IntVector3D origin;
     private final IntVector3D dimensions;
     private final int[][][] blocks;
     private final byte[][][] emittedLight;
@@ -199,16 +202,15 @@ public class Schematic implements GravSerializable {
         return this.blocks[y][x][z];
     }
 
-    public IntVector3D getDimensions() {
-        return this.dimensions;
+    public void setBlockAt(IntVector3D relLoc, int newValue) {
+        setBlockAt(relLoc.getX(), relLoc.getY(), relLoc.getZ(), newValue);
+    }
+    public void setBlockAt(int x, int y, int z, int newValue) {
+        this.blocks[y][x][z] = newValue;
     }
 
     public int getEmittedLight(int x, int y, int z) {
         return emittedLight[y][x][z] & 0xF;
-    }
-
-    public IntVector3D getOrigin() {
-        return this.origin;
     }
 
     public Schematic copy() {

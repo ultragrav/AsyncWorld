@@ -7,7 +7,7 @@
     <parent>
         <artifactId>AsyncWorld</artifactId>
         <groupId>net.ultragrav</groupId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
 
     <artifactId>AsyncWorldShade</artifactId>
@@ -45,7 +45,7 @@
         <dependency>
             <groupId>net.ultragrav</groupId>
             <artifactId>Utils</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.spigotmc</groupId>

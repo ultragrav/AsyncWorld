@@ -24,9 +24,10 @@ public class CmdPaste extends AWCommand {
     @Override
     public void perform() {
         if (!sender.hasPermission("asyncworld.paste")) {
-            returnTell("§6§lAsyncWorld§8 > &cYou don't have permission to do this!");
+            tell("§6§lAsyncWorld§8 > &cYou don't have permission to do this!");
+            return;
         }
-        Player player = (Player) sender;
+        Player player = (Player) sender.getWrappedObject();
 
         WorldEditPlayerState state = getState();
         Schematic schem = state.getClipboard();

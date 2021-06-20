@@ -24,14 +24,16 @@ public class CmdLoadSchematic extends AWCommand {
     @Override
     public void perform() {
         if (!sender.hasPermission("asyncworld.loadschem")) {
-            returnTell("§6§lAsyncWorld§8 > &cYou don't have permission to do this!");
+            tell("§6§lAsyncWorld§8 > &cYou don't have permission to do this!");
+            return;
         }
         Player player = getSpigotPlayer();
 
         String name = getArgument(0);
         File f = new File(AWTest.instance.getDataFolder(), "schematics/" + name + ".bschem");
         if (!f.exists()) {
-            returnTell("§cThat schematic does not exist");
+            tell("§cThat schematic does not exist");
+            return;
         }
 
         WorldEditPlayerState state = getState();

@@ -2,13 +2,15 @@ package net.ultragrav.asyncworld;
 
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.Plugin;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -98,18 +100,22 @@ public class ChunkQueue implements Listener {
 
                     //Schedule
                     todo.removeIf(chunk -> {
-
                         chunk.start();
 
                         CompletableFuture<AsyncChunk> future = new CompletableFuture<>();
 
                         //NOTE this is a just the scheduling of the task, not the execution, so this doesn't take long
                         ForkJoinPool.commonPool().execute(() -> {
-                            synchronized (chunk) { //synchronized so the editedSections is correct
-                                masks.put(chunk, chunk.getEditedSections());
-                                chunk.call();
+                            try {
+                                synchronized (chunk) { //synchronized so the editedSections is correct
+                                    masks.put(chunk, chunk.getEditedSections());
+                                    chunk.call();
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            } finally {
+                                future.complete(chunk);
                             }
-                            future.complete(chunk);
                         });
                         futures.add(future);
                         return true;
@@ -124,6 +130,13 @@ public class ChunkQueue implements Listener {
                         chunk.end(masks.get(chunk));
                         futureIterator.remove();
                     }
+
+                    listLock.lock();
+                    if (chunks.isEmpty()) {
+                        listLock.unlock();
+                        break;
+                    }
+                    listLock.unlock();
                 }
 
                 accTime += (System.currentTimeMillis() - ms1);
@@ -140,7 +153,7 @@ public class ChunkQueue implements Listener {
             }
 
             //GC
-            if (Runtime.getRuntime().freeMemory() / (double) Runtime.getRuntime().totalMemory() > 0.88D
+            if (Runtime.getRuntime().freeMemory() / (double) Runtime.getRuntime().totalMemory() < 0.20D
                     || System.currentTimeMillis() - lastGC > 20000 || useGC) {
                 System.gc();
                 useGC = false;
@@ -181,7 +194,7 @@ public class ChunkQueue implements Listener {
                     return;
                 try {
                     c.run();
-                } catch(Throwable t) {
+                } catch (Throwable t) {
                     t.printStackTrace();
                 }
             });
@@ -202,7 +215,8 @@ public class ChunkQueue implements Listener {
 
     /**
      * Queues a chunk for flushing
-     * @param chunk The chunk to queue
+     *
+     * @param chunk    The chunk to queue
      * @param callback callback to run when chunk has been flushed
      * @return true if successfully queued, false otherwise
      */
@@ -240,7 +254,7 @@ public class ChunkQueue implements Listener {
                 this.setWorking(true);
                 this.startWork();
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         } finally {
@@ -257,14 +271,14 @@ public class ChunkQueue implements Listener {
         listLock.lock();
         try {
             for (AsyncChunk chunk : chunks) {
-                if(!this.queueChunk(chunk, () -> {
-                    if(completed.incrementAndGet() >= needed && ran.compareAndSet(false, true)) {
+                if (!this.queueChunk(chunk, () -> {
+                    if (completed.incrementAndGet() >= needed && ran.compareAndSet(false, true)) {
                         callback.run();
                     }
                 })) {
 
                     //Failed to queue, count it as completed
-                    if(completed.incrementAndGet() >= needed && ran.compareAndSet(false, true)) {
+                    if (completed.incrementAndGet() >= needed && ran.compareAndSet(false, true)) {
                         callback.run();
                     }
                 }
@@ -290,7 +304,7 @@ public class ChunkQueue implements Listener {
     }
 
     private boolean shouldStop() {
-        if(this.lastTick == -1) {
+        if (this.lastTick == -1) {
             this.lastTick = System.currentTimeMillis();
             return false;
         }

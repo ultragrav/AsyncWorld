@@ -22,16 +22,19 @@ public class CmdCopy extends AWCommand {
 
     public void perform() {
         if (!sender.hasPermission("asyncworld.copy")) {
-            returnTell("&6&lAsyncWorld&8 > &cYou don't have permission to do this!");
+            tell("&6&lAsyncWorld&8 > &cYou don't have permission to do this!");
+            return;
         }
-        if (!(sender instanceof Player)) {
-            returnTell("&6&lAsyncWorld&8 > &cYou must be a player to use this command");
+        if (!isPlayer()) {
+            tell("&6&lAsyncWorld&8 > &cYou must be a player to use this command");
+            return;
         }
 
         WorldEditPlayerState state = getState();
 
         if (state.getPos1() == null || state.getPos2() == null) {
-            returnTell("&6&lAsyncWorld&8 > &7Please make a valid selection!");
+            tell("&6&lAsyncWorld&8 > &7Please make a valid selection!");
+            return;
         }
 
         CuboidRegion region = new CuboidRegion(state.getPos1(), state.getPos2());

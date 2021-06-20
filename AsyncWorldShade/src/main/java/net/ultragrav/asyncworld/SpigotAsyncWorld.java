@@ -1,8 +1,9 @@
 package net.ultragrav.asyncworld;
 
-import asyncworld.chunk.AsyncChunk1_15_R1;
 import lombok.Getter;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
+import net.ultragrav.asyncworld.chunk.AsyncChunk1_15_R1;
+import net.ultragrav.asyncworld.chunk.AsyncChunk1_8_R3;
 import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
@@ -48,10 +49,10 @@ public class SpigotAsyncWorld extends AsyncWorld {
         String name = Bukkit.getServer().getClass().getName();
         String[] parts = name.split("\\.");
         serverVersion = parts[3];
+        if (this.getServerVersion().startsWith("v1_8")) // TODO: Other 1.8 variants? v1_8_R1, R_2?
+            sV = 8;
         if (this.getServerVersion().startsWith("v1_12"))
             sV = 12;
-        if (this.getServerVersion().startsWith("v1_8"))
-            sV = 8;
         if (this.getServerVersion().startsWith("v1_15"))
             sV = 15;
     }
@@ -69,6 +70,8 @@ public class SpigotAsyncWorld extends AsyncWorld {
     @Override
     protected AsyncChunk getNewChunk(int cx, int cz) {
         switch (sV) {
+            case 8:
+                return new AsyncChunk1_8_R3(this, new ChunkLocation(this, cx, cz));
             case 12:
                 return new AsyncChunk1_12_R1(this, new ChunkLocation(this, cx, cz));
             case 15:
@@ -367,7 +370,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
         for (AsyncChunk chunk : chunks) {
             if (!chunk.isChunkLoaded()) {
                 if (sync) {
-                    getBukkitWorld().loadChunk(chunk.getLoc().getX(), chunk.getLoc().getZ());
+                    getBukkitWorld().loadChunk(chunk.getLoc().getX(), chunk.getLoc().getZ(), true);
                 } else {
                     syncLoad.add(chunk);
                 }
@@ -378,7 +381,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ()));
+                    syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ(), true));
                     future.complete(null);
                 }
             }.runTask(chunkQueue.getPlugin());

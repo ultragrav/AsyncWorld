@@ -38,7 +38,7 @@ public class AWTest extends JavaPlugin {
                     if (l == -2)
                         return;
                     if (l != -1 && (System.currentTimeMillis() - l) > 4000) {
-                        File file = new File(getDataFolder(), "Crash-" + UUID.randomUUID().toString() + new Date().toString() + ".txt");
+                        File file = new File(getDataFolder(), "Crash-" + UUID.randomUUID().toString() + ".txt");
                         try (FileWriter writer = new FileWriter(file)) {
                             Map<?, ?> liveThreads = Thread.getAllStackTraces();
                             for (Object o : liveThreads.keySet()) {

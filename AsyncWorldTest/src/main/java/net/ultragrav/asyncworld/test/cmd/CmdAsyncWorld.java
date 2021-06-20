@@ -17,4 +17,9 @@ public class CmdAsyncWorld extends UltraCommand {
                 new CmdReplace()
         );
     }
+
+    @Override
+    protected void perform() {
+
+    }
 }

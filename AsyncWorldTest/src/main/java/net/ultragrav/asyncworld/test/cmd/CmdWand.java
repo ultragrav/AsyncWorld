@@ -13,8 +13,8 @@ public class CmdWand extends AWCommand {
 
     public void perform() {
         Player player = getSpigotPlayer();
-        ItemStack stack = player.getInventory().getItemInMainHand();
-        player.getInventory().setItemInMainHand(WorldEditPlayerManager.instance.getWand());
+        ItemStack stack = player.getItemInHand();
+        player.setItemInHand(WorldEditPlayerManager.instance.getWand());
         player.getInventory().addItem(stack);
     }
 }

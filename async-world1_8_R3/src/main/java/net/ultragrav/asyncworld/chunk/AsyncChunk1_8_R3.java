@@ -6,309 +6,643 @@ import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.nbt.*;
 import net.ultragrav.utils.IntVector3D;
-import net.ultragrav.utils.Vector3D;
-import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_8_R3.CraftChunk;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
-
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
+@SuppressWarnings("unchecked")
+public class AsyncChunk1_8_R3 extends AsyncChunk {
+    public AsyncChunk1_8_R3(AsyncWorld parent, ChunkLocation loc) {
+        super(parent, loc);
+    }
 
-import java.util.HashMap;
+    private final Map<BlockPosition, TileEntity> tilesToRemove = new HashMap<>();
 
-//public class AsyncChunk1_8_R3 extends AsyncChunk {
-//    public AsyncChunk1_8_R3(AsyncWorld parent, ChunkLocation loc) {
-//        super(parent, loc);
-//        Arrays.fill(biomes, (byte) -1);
-//    }
-//
-//    private boolean loaded;
-//    private Map<BlockPosition, TileEntity> tilesToRemove = new HashMap<>();
-//
-//    private net.minecraft.server.v1_8_R3.Chunk getNmsChunk() {
-//        ChunkLocation loc = this.getLoc();
-//        return ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
-//        //return null;
-//    }
-//
-//    @Override
-//    public short getCombinedBlockSync(int x, int y, int z) {
-//        net.minecraft.server.v1_8_R3.Chunk nmsChunk = getNmsChunk();
-//        if (nmsChunk.getSections()[y >> 4] == null)
-//            return 0;
-//        IBlockData data = nmsChunk.getSections()[y >> 4].getType(x, y & 0xF, z);
-//        return (short) Block.getCombinedId(data);
-//    }
-//
-//    @Override
-//    protected void optimizeSection(int index, GUChunkSection section) {
-//        //No optimization currently for 1.8 i might write it later
-//    }
-//
-//    @Override
-//    public void start() {
-////        loaded = getLoc().getWorld().getBukkitWorld().isChunkLoaded(getLoc().getX(), getLoc().getZ());
-////        if(!loaded)
-////            getBukkitChunk().load(true);
-//    }
-//
-//    @Override
-//    public void end(int mask) {
-//        net.minecraft.server.v1_8_R3.Chunk nmsChunk = getNmsChunk();
-//
-//        //Remove tile entity
-//        tilesToRemove.forEach((bp, te) -> {
-//            nmsChunk.getWorld().t(bp); //Remove it from the world
-//            nmsChunk.getTileEntities().remove(bp); //Remove it from the chunk
-//            te.y(); //Got no idea what this does but it's needed
-//            te.E(); //Set tile entity's parent block to null
-//        });
-//
-//        tilesToRemove.clear();
-//
-//        getTiles().forEach((intVector3D, te) -> {
-//            BlockPosition bp = new BlockPosition(intVector3D.getX(), intVector3D.getY(), intVector3D.getZ());
-//            TileEntity entity = nmsChunk.getWorld().getTileEntity(bp); //Get or Create tile entity or null if none is applicable to the block at that position
-//            if (entity != null) {
-//                //Set Tile Entity's Coordinates in it's NBT
-//                te.getData().put("x", new TagInt(bp.getX()));
-//                te.getData().put("y", new TagInt(bp.getY()));
-//                te.getData().put("z", new TagInt(bp.getZ()));
-//
-//                entity.a(fromGenericCompound(te)); //Load NBT into tile entity
-//            }
-//        });
-//
-//        getTiles().clear();
-//
-//        this.sendPackets(mask);
-//
-//        if (!loaded)
-//            getBukkitChunk().unload();
-//    }
-//
-//    public void sendPackets(int mask) {
-//        ChunkLocation loc = this.getLoc();
-//        net.minecraft.server.v1_8_R3.Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
-//        PacketPlayOutMapChunk packet;
-//        PacketPlayOutMapChunk secondMapPacket;
-//
-//        //The client will for some reason de-spawn entities in map chunk updates which have a mask
-//        // of 65535 or 0 however 0 will never be called so only check for 65535
-//        if (mask == 65535) {
-//            packet = new net.minecraft.server.v1_8_R3.PacketPlayOutMapChunk(nmsChunk, false, 65280);
-//            secondMapPacket = new net.minecraft.server.v1_8_R3.PacketPlayOutMapChunk(nmsChunk, false, 255);
-//        } else {
-//            packet = new net.minecraft.server.v1_8_R3.PacketPlayOutMapChunk(nmsChunk, false, mask);
-//            secondMapPacket = null;
-//        }
-//
-//        List<net.minecraft.server.v1_8_R3.Packet> tilePackets = new ArrayList<>();
-//        nmsChunk.getTileEntities().forEach((key, value) -> tilePackets.add(value.getUpdatePacket()));
-//
-//
-//        PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getPlayerChunkMap();
-//        for (Player player : Bukkit.getOnlinePlayers()) {
-//            EntityPlayer pl = ((CraftPlayer) player).getHandle();
-//            if (map.a(pl, loc.getX(), loc.getZ())) {
-//                pl.playerConnection.sendPacket(packet);
-//                if (secondMapPacket != null) {
-//                    pl.playerConnection.sendPacket(secondMapPacket);
-//                }
-//                tilePackets.forEach(pack -> pl.playerConnection.sendPacket(packet));
-//            }
-//        }
-//    }
-//
-//    public void update() {
-//
-//        ChunkLocation loc = this.getLoc();
-//        net.minecraft.server.v1_8_R3.Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
-//
-//        nmsChunk.mustSave = true;
-//        nmsChunk.f(true);
-//
-//        int bx = loc.getX() << 4;
-//        int bz = loc.getZ() << 4;
-//
-//        ChunkSection[] sections = nmsChunk.getSections();
-//        for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
-//            if ((this.getEditedSections() >> sectionIndex & 1) == 0)
-//                continue;
-//            ChunkSection section = sections[sectionIndex];
-//            if (section == null) {
-//                section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
-//            }
-//
-//            GUChunkSection guChunkSection = chunkSections[sectionIndex];
-//
-//            short[] sectionContents = guChunkSection == null ? null : guChunkSection.contents;
-//
-//            int air = 0;
-//
-//            for (int i = 0; i < 4096; i++) {
-//
-//                int block = sectionContents != null ? sectionContents[i] : 0;
-//
-//                int lx = getLX(i);
-//                int ly = getLY(i);
-//                int lz = getLZ(i);
-//
-//                if (block == -2 || block == 0) //ignore
-//                    continue;
-//
-//                if (block == -1) {
-//                    block = 0;
-//                    air++;
-//                }
-//
-//                section.setType(lx, ly, lz, net.minecraft.server.v1_8_R3.Block.getByCombinedId(block & 0xFFFF));
-//                section.getSkyLightArray().a(lx, ly, lz, 15);
-//
-//                //Remove tile entity
-//                BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
-//                TileEntity te = nmsChunk.getTileEntities().get(position);
-//                if (te != null)
-//                    tilesToRemove.put(position, te);
-//            }
-//            if (air == 65536) {
-//                sections[sectionIndex] = null;
-//            }
-//        }
-//
-//        //Biomes
-//        byte[] chunkBiomes = nmsChunk.getBiomeIndex();
-//        for (int i = 0; i < chunkBiomes.length && i < biomes.length; i++)
-//            if (biomes[i] != -1)
-//                chunkBiomes[i] = biomes[i];
-//        Arrays.fill(biomes, (byte) -1);
-//
-//        nmsChunk.initLighting();
-//    }
-//
-//    @Override
-//    protected void loadFromChunk(int sectionMask) {
-//        net.minecraft.server.v1_8_R3.Chunk chunk = getNmsChunk();
-//        ChunkSection[] sections = chunk.getSections();
-//
-//        Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
-//        tiles.forEach((p, t) -> {
-//            if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
-//                setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, null);
-//        });
-//
-//        for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-//            if ((sectionMask >> sectionIndex & 1) == 0)
-//                continue;
-//
-//            ChunkSection section = sections[sectionIndex];
-//
-//            if (section == null) {
-//                GUChunkSection section1 = this.chunkSections[sectionIndex];
-//                if (section1 == null)
-//                    section1 = this.chunkSections[sectionIndex] = new GUChunkSection();
-//                System.arraycopy(AsyncChunk.airFilled, 0, section1.contents, 0, AsyncChunk.airFilled.length);
+    private final int[] airCount = new int[16];
+    private static final byte[] BIOME_DEFAULT = new byte[256];
+
+    private static Field fieldPalette;
+    private static Field fieldTickingBlockCount;
+    private static Field fieldNonEmptyBlockCount;
+
+    private static Method methodGetPlayerChunk;
+    private static Field fieldPlayers;
+
+    private Chunk nmsCachedChunk = null;
+
+    static {
+        try {
+            fieldNonEmptyBlockCount = ChunkSection.class.getDeclaredField("nonEmptyBlockCount");
+            fieldTickingBlockCount = ChunkSection.class.getDeclaredField("tickingBlockCount");
+            fieldPalette = ChunkSection.class.getDeclaredField("blockIds");
+            fieldPalette.setAccessible(true);
+            fieldTickingBlockCount.setAccessible(true);
+            fieldNonEmptyBlockCount.setAccessible(true);
+
+            methodGetPlayerChunk = PlayerChunkMap.class.getDeclaredMethod("a", int.class, int.class, boolean.class);
+            methodGetPlayerChunk.setAccessible(true);
+            fieldPlayers = methodGetPlayerChunk.getReturnType().getDeclaredField("b");
+            fieldPlayers.setAccessible(true);
+        } catch (NoSuchFieldException | NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+        Arrays.fill(BIOME_DEFAULT, (byte) -1);
+    }
+
+    private void validateCachedChunk() {
+        if (nmsCachedChunk == null) {
+            if (!getParent().getBukkitWorld().isChunkLoaded(this.getLoc().getX(), this.getLoc().getZ())) {
+                return;
+            }
+            nmsCachedChunk = ((CraftChunk) getParent().getBukkitWorld().getChunkAt(this.getLoc().getX(), this.getLoc().getZ())).getHandle();
+        }
+    }
+
+    @Override
+    public int getCombinedBlockSync(int x, int y, int z) {
+        Chunk nmsChunk = getNmsChunk();
+        ChunkSection[] sections = nmsChunk.getSections();
+        ChunkSection section = sections[y >>> 4];
+        if (section == null) {
+            return 0;
+        }
+        IBlockData data = section.getType(x, y & 15, z);
+        return Block.getCombinedId(data);
+    }
+
+    @Override
+    protected void optimizeSection(int index, GUChunkSection section) {
+//        DataPaletteBlock palette = new DataPaletteBlock();
+//        int airCount = 0;
+//        for (int i = 0, length = section.contents.length; i < length; i++) {
+//            short block = section.contents[i];
+//            if (block == 0 || block == -1) {
+//                airCount++;
 //                continue;
 //            }
-//
-//            for (int x = 0; x < 16; x++) {
-//                for (int y = 0; y < 16; y++) {
-//                    for (int z = 0; z < 16; z++) {
-//                        int block = Block.getCombinedId(sections[sectionIndex].getType(x, y, z));
-//                        this.writeBlock(x, y + (sectionIndex << 4), z, block & 0xFFF, (byte) (block >>> 12));
+//            palette.setBlock(getLX(i), getLY(i), getLZ(i), Block.getByCombinedId(block));
+//        }
+//        this.airCount[index] = airCount;
+//        optimizedSections[index] = palette;
+        // TODO: No DataPaletteBlock
+    }
+
+    public static void setCount(int tickingBlockCount, int nonEmptyBlockCount, ChunkSection section) throws NoSuchFieldException, IllegalAccessException {
+        fieldTickingBlockCount.set(section, tickingBlockCount);
+        fieldNonEmptyBlockCount.set(section, nonEmptyBlockCount);
+    }
+
+    // TODO wtf is DataPaletteBlock anyway
+//    public void setPalette(ChunkSection section, DataPaletteBlock palette) throws NoSuchFieldException, IllegalAccessException {
+//        fieldPalette.set(section, palette); // This should be a char[]
+//    }
+
+    private Chunk getNmsChunk() {
+        validateCachedChunk();
+        return nmsCachedChunk;
+    }
+
+    @Override
+    public void start() {
+        getBukkitChunk().load(true);
+    }
+
+    @Override
+    public void end(int mask) {
+        Chunk nmsChunk = getNmsChunk();
+        long ms = System.currentTimeMillis();
+
+        //Remove tile entity
+        tilesToRemove.forEach((bp, te) -> {
+            nmsChunk.world.t(bp); //Remove it from the world
+            nmsChunk.getTileEntities().remove(bp); //Remove it from the chunk
+            te.y(); // Set removed to true
+            te.E(); // Set tile entity's parent block to null
+        });
+
+        tilesToRemove.clear();
+
+        //Add tile entities
+        getTiles().forEach((intVector3D, te) -> {
+            BlockPosition bp = new BlockPosition(intVector3D.getX(), intVector3D.getY(), intVector3D.getZ());
+            TileEntity entity = nmsChunk.getWorld().getTileEntity(bp); //Get or Create tile entity or null if none is applicable to the block at that position
+
+            if (entity != null) {
+                //Set Tile Entity's Coordinates in it's NBT
+                te.getData().put("x", new TagInt(bp.getX()));
+                te.getData().put("y", new TagInt(bp.getY()));
+                te.getData().put("z", new TagInt(bp.getZ()));
+
+                entity.a(fromGenericCompound(te)); // Load NBT into tile entity
+            }
+        });
+
+        getTiles().clear();
+        ms = System.currentTimeMillis() - ms;
+        ms = System.currentTimeMillis();
+        this.sendPackets(mask);
+        ms = System.currentTimeMillis() - ms;
+    }
+
+    @Override
+    public int syncGetEmittedLight(int x, int y, int z) {
+        validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return 0;
+        int sectionIndex = y >> 4;
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        return nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z);
+    }
+
+    @Override
+    public int syncGetSkyLight(int x, int y, int z) {
+        validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return 0;
+        int sectionIndex = y >> 4;
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
+    }
+
+    @Override
+    public int syncGetBrightnessOpacity(int x, int y, int z) {
+        validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return 0;
+        int sectionIndex = y >> 4;
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+            return 0;
+        }
+        IBlockData data = nmsCachedChunk.getSections()[sectionIndex].getType(x, y & 15, z);
+        return data.getBlock().getMaterial().r().L; // TODO: Check
+    }
+
+    @Override
+    public void syncSetEmittedLight(int x, int y, int z, int value) {
+        validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return;
+        int sectionIndex = y >> 4;
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+        }
+        nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
+    }
+
+    @Override
+    public void syncSetSkyLight(int x, int y, int z, int value) {
+        validateCachedChunk();
+        if (nmsCachedChunk == null)
+            return;
+        int sectionIndex = y >> 4;
+        if (nmsCachedChunk.getSections()[sectionIndex] == null) {
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+        }
+        nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
+    }
+
+    @Override
+    public Map<IntVector3D, TagCompound> syncGetTiles() {
+        validateCachedChunk();
+        Map<IntVector3D, TagCompound> list = new HashMap<>();
+
+        nmsCachedChunk.getTileEntities().forEach((p, t) -> {
+            if (t == null)
+                return;
+            NBTTagCompound compound = new NBTTagCompound();
+            t.b(compound);
+            list.put(new IntVector3D(p.getX(), p.getY(), p.getZ()), fromNMSCompound(compound));
+        });
+        return list;
+    }
+
+    @Override //Not async safe
+    public List<TagCompound> syncGetEntities() {
+        List<TagCompound> out = new ArrayList<>();
+        for (int i = 0; i < getNmsChunk().getEntitySlices().length; i++) {
+            if (nmsCachedChunk.getEntitySlices()[i] == null)
+                continue;
+            for (Entity entity : nmsCachedChunk.getEntitySlices()[i]) {
+                //All entities in the i-th section
+                NBTTagCompound nmsCompound = new NBTTagCompound();
+                if (entity.d(nmsCompound)) {
+                    TagCompound compound = fromNMSCompound(nmsCompound);
+                    out.add(compound);
+                }
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public int[] syncGetHeightMap() {
+        Chunk chunk = getNmsChunk();
+
+        int[] arr = new int[chunk.heightMap.length];
+        System.arraycopy(chunk.heightMap, 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    @Override
+    public void syncGetBlocksAndData(byte[] blocks, byte[] data, int section) {
+        if (data.length < 2048 || blocks.length < 4096)
+            return;
+        ChunkSection sect = getNmsChunk().getSections()[section];
+        if (sect == null)
+            return;
+
+        //sect.getBlocks().exportData(blocks, new NibbleArray(data));
+        sect.getIdArray(); // TODO: Check if this contains block data values
+    }
+
+    @Override
+    public byte[] syncGetEmittedLight(int section) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection sect = chunk.getSections()[section];
+        if (sect == null)
+            return null;
+        byte[] arr = new byte[2048];
+        System.arraycopy(chunk.getSections()[section].getEmittedLightArray().a(), 0, arr, 0, arr.length); // TODO: Verify
+        return arr;
+    }
+
+    @Override
+    public byte[] syncGetSkyLight(int section) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection sect = chunk.getSections()[section];
+        if (sect == null)
+            return null;
+        byte[] arr = new byte[2048];
+        System.arraycopy(chunk.getSections()[section].getSkyLightArray().a(), 0, arr, 0, arr.length); // TODO: Verify
+        return arr;
+    }
+
+    @Override
+    public short getSectionBitMask() {
+        ChunkSection[] sections = getNmsChunk().getSections();
+        short mask = 0;
+        for (int i = 0; i < 16; i++) {
+            if (sections[i] != null) {
+                mask |= 1 << i;
+            }
+        }
+        return mask;
+    }
+
+    @Override
+    public boolean sectionExists(int section) {
+        if (getNmsChunk() == null)
+            return false;
+        return getNmsChunk().getSections()[section] != null;
+    }
+
+    @Override
+    public byte[] syncGetBiomes() {
+        Chunk chunk = getNmsChunk();
+        byte[] arr = new byte[chunk.getBiomeIndex().length];
+        System.arraycopy(chunk.getBiomeIndex(), 0, arr, 0, arr.length);
+        return arr;
+    }
+
+    public Object getSection(int sectionIndex) {
+        validateCachedChunk();
+        return nmsCachedChunk.getSections()[sectionIndex];
+    }
+
+    @Override
+    public synchronized void loadTiles() {
+
+        validateCachedChunk();
+
+        getTiles().clear();
+
+        nmsCachedChunk.getTileEntities().forEach((p, t) -> {
+            if (t == null)
+                return;
+            NBTTagCompound compound = new NBTTagCompound();
+            t.b(compound);
+            this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(compound));
+        });
+    }
+
+    @Override
+    public void sendPackets(int mask) {
+        ChunkLocation loc = this.getLoc();
+        Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
+        PacketPlayOutMapChunk packet;
+        PacketPlayOutMapChunk secondMapPacket;
+
+        //The client will for some reason de-spawn entities in map chunk updates which have a mask
+        // of 65535 or 0 however 0 will never be called so only check for 65535
+        if (mask == 65535) {
+            packet = new PacketPlayOutMapChunk(nmsChunk, false, 65280);
+            secondMapPacket = new PacketPlayOutMapChunk(nmsChunk, false, 255);
+        } else {
+            packet = new PacketPlayOutMapChunk(nmsChunk, false, mask);
+            secondMapPacket = null;
+        }
+
+        List<Packet<?>> tilePackets = new ArrayList<>();
+        nmsChunk.getTileEntities().forEach((key, value) -> tilePackets.add(value.getUpdatePacket()));
+
+        try {
+            PlayerChunkMap map = ((WorldServer) nmsChunk.getWorld()).getPlayerChunkMap();
+            Object playerChunk = methodGetPlayerChunk.invoke(map, loc.getX(), loc.getZ(), false);
+            List<EntityPlayer> players = (List<EntityPlayer>) fieldPlayers.get(playerChunk);
+            if (playerChunk == null)
+                return;
+            players.forEach(p -> {
+                p.playerConnection.sendPacket(packet);
+                if (secondMapPacket != null) {
+                    p.playerConnection.sendPacket(secondMapPacket);
+                }
+                tilePackets.forEach(packet1 -> p.playerConnection.sendPacket(packet1));
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void update() {
+        //long ms = System.nanoTime();
+        ChunkLocation loc = this.getLoc();
+        Chunk nmsChunk = getNmsChunk();
+        nmsCachedChunk = null;
+
+        nmsChunk.mustSave = true;
+        nmsChunk.f(true);
+
+        int bx = loc.getX() << 4;
+        int bz = loc.getZ() << 4;
+
+        boolean noTiles = nmsChunk.getTileEntities().isEmpty();
+
+        int remMask = 0;
+
+        int compEdited = 0;
+
+        ChunkSection[] sections = nmsChunk.getSections();
+        for (int sectionIndex = 0; sectionIndex < 16; sectionIndex++) {
+            if ((this.getEditedSections() >>> sectionIndex & 1) == 0)
+                continue;
+
+            ChunkSection section = sections[sectionIndex];
+
+            GUChunkSection guChunkSection = chunkSections[sectionIndex];
+
+            if (guChunkSection == null)
+                continue;
+
+            boolean completelyEdited = section == null;
+            if (!completelyEdited) {
+                completelyEdited = true;
+                long[] edited = guChunkSection.edited;
+                for (int i = 0, editedLength = edited.length; i < editedLength; i++) {
+                    long l = edited[i];
+                    if (l != -1L) {
+                        completelyEdited = false;
+                        break;
+                    }
+                }
+            }
+
+            if (completelyEdited) {
+                compEdited++;
+                if (section == null)
+                    section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+                System.arraycopy(guChunkSection.emittedLight, 0,
+                        section.getEmittedLightArray().a(), 0, guChunkSection.emittedLight.length);
+
+                if (this.isFullSkyLight())
+                    Arrays.fill(section.getSkyLightArray().a(), (byte) 0xFF);
+
+                // TODO: how optimization without DataPaletteBlock?
+//                if (optimizedSections[sectionIndex] != null) {
+//                    try {
+//                        setPalette(section, optimizedSections[sectionIndex]); //Set palette
+//                        setCount(0, 4096 - airCount[sectionIndex], section); //Set non-air-block count
+//                    } catch (NoSuchFieldException | IllegalAccessException e) {
+//                        e.printStackTrace();
 //                    }
+//                    remMask |= 1 << sectionIndex;
+//                    continue;
 //                }
-//            }
-//        }
-//
-//        //Do this after writing blocks
-//        chunk.getTileEntities().forEach((p, t) -> {
-//            if (t == null)
-//                return;
-//            NBTTagCompound compound = new NBTTagCompound();
-//            t.b(compound);
-//            this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(compound));
-//        });
-//
-//    }
-//
-//    private TagCompound fromNMSCompound(NBTTagCompound compound) {
-//        return (TagCompound) fromNMSTag(compound);
-//    }
-//
-//    private Tag fromNMSTag(NBTBase base) {
-//        if (base instanceof NBTTagCompound) {
-//            TagCompound compound = new TagCompound();
-//            for (String key : ((NBTTagCompound) base).c()) {
-//                compound.getData().put(key, fromNMSTag(((NBTTagCompound) base).get(key)));
-//            }
-//            return compound;
-//        } else if (base instanceof NBTTagList) {
-//            TagList list = new TagList();
-//            for (int i = 0; i < ((NBTTagList) base).size(); i++) {
-//                list.getData().add(fromNMSTag(((NBTTagList) base).g(i)));
-//            }
-//            return list;
-//        } else if (base instanceof NBTTagShort) {
-//            return new TagShort(((NBTTagShort) base).e());
-//        } else if (base instanceof NBTTagLong) {
-//            return new TagLong(((NBTTagLong) base).c());
-//        } else if (base instanceof NBTTagInt) {
-//            return new TagInt(((NBTTagInt) base).d());
-//        } else if (base instanceof NBTTagByte) {
-//            return new TagByte(((NBTTagByte) base).f());
-//        } else if (base instanceof NBTTagIntArray) {
-//            return new TagIntArray(((NBTTagIntArray) base).c());
-//        } else if (base instanceof NBTTagDouble) {
-//            return new TagDouble(((NBTTagDouble) base).g());
-//        } else if (base instanceof NBTTagByteArray) {
-//            return new TagByteArray(((NBTTagByteArray) base).c());
-//        } else if (base instanceof NBTTagEnd) {
-//            return new TagEnd();
-//        } else if (base instanceof NBTTagFloat) {
-//            return new TagFloat(((NBTTagFloat) base).h());
-//        } else if (base instanceof NBTTagString) {
-//            return new TagString(((NBTTagString) base).a_());
-//        }
-//        throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
-//    }
-//
-//    private NBTTagCompound fromGenericCompound(TagCompound compound) {
-//        return (NBTTagCompound) fromGenericTag(compound);
-//    }
-//
-//    private NBTBase fromGenericTag(Tag tag) {
-//        if (tag instanceof TagCompound) {
-//            NBTTagCompound compound = new NBTTagCompound();
-//            Map<String, Tag> tags = ((TagCompound) tag).getData();
-//            tags.forEach((k, t) -> compound.set(k, fromGenericTag(t)));
-//            return compound;
-//        } else if (tag instanceof TagShort) {
-//            return new NBTTagShort(((TagShort) tag).getData());
-//        } else if (tag instanceof TagLong) {
-//            return new NBTTagLong(((TagLong) tag).getData());
-//        } else if (tag instanceof TagInt) {
-//            return new NBTTagInt(((TagInt) tag).getData());
-//        } else if (tag instanceof TagByte) {
-//            return new NBTTagByte(((TagByte) tag).getData());
-//        } else if (tag instanceof TagByteArray) {
-//            return new NBTTagByteArray(((TagByteArray) tag).getData());
-//        } else if (tag instanceof TagString) {
-//            return new NBTTagString(((TagString) tag).getData());
-//        } else if (tag instanceof TagList) {
-//            NBTTagList list = new NBTTagList();
-//            ((TagList) tag).getData().forEach(t -> list.add(fromGenericTag(t)));
-//            return list;
-//        } else if (tag instanceof TagIntArray) {
-//            return new NBTTagIntArray(((TagIntArray) tag).getData());
-//        } else if (tag instanceof TagFloat) {
-//            return new NBTTagFloat(((TagFloat) tag).getData());
-//        } else if (tag instanceof TagDouble) {
-//            return new NBTTagDouble(((TagDouble) tag).getData());
-//        }
-//        throw new IllegalArgumentException("Tag is not of a recognized type (" + tag.getClass().getName() + ")");
-//    }
-//}
+            }
+
+            short[] sectionContents = guChunkSection.contents;
+
+            int air = 0;
+
+            for (int i = 0; i < 4096; i++) {
+
+                short block = sectionContents[i];
+
+                int lx = CACHE_X[i];
+                int ly = CACHE_Y[i];
+                int lz = CACHE_Z[i];
+
+                if (block == -2 || block == 0)
+                    continue;
+
+                if (block == -1) {
+                    block = 0;
+                    air++;
+                }
+
+                IBlockData bd = Block.getByCombinedId(block & 0xFFFF);
+                section.setType(lx, ly, lz, bd);
+                if (!completelyEdited) {
+                    int index = i;
+                    int part = index & 1;
+                    index >>>= 1;
+                    int emittedLight = (guChunkSection.emittedLight[index] >>> (part << 2) & 0xF);
+                    section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
+
+                    if (this.fullSkyLight)
+                        section.getSkyLightArray().a(lx, ly, lz, 0xF);
+                }
+
+                //Remove tile entity
+                if (!noTiles) {
+                    BlockPosition position = new BlockPosition(lx + bx, ly + (sectionIndex << 4), lz + bz);
+                    TileEntity te = nmsChunk.tileEntities.get(position);
+                    if (te != null) {
+                        tilesToRemove.put(position, te);
+                    }
+                }
+            }
+
+
+        }
+
+
+        //Biomes
+        byte[] chunkBiomes = nmsChunk.getBiomeIndex();
+        for (int i = 0; i < chunkBiomes.length && i < biomes.length; i++)
+            if (biomes[i] != -1)
+                chunkBiomes[i] = biomes[i];
+        System.arraycopy(BIOME_DEFAULT, 0, biomes, 0, biomes.length);
+
+        //Rem more tiles (from completely edited sections)
+        if (remMask != 0) {
+            int finalRemMask = remMask;
+            nmsChunk.getTileEntities().forEach((p, t) -> {
+                if ((finalRemMask & (1 << (p.getY() >> 4))) != 0) {
+                    if (t != null)
+                        tilesToRemove.put(p, t);
+                }
+            });
+        }
+
+        //heightmap/lighting
+        nmsChunk.initLighting();
+
+        //Cleanup TODO
+        //optimizedSections = new DataPaletteBlock[16];
+
+        //ms = System.nanoTime() - ms;
+        //System.out.println("Chunk update took: " + ms + "ns comp edits: " + compEdited);
+    }
+
+    @Override
+    protected void loadFromChunk(int sectionMask) {
+        Chunk chunk = getNmsChunk();
+        ChunkSection[] sections = chunk.getSections();
+
+        //Clear tiles in the specified sections
+        Map<IntVector3D, TagCompound> tiles = new HashMap<>(getTiles());
+        tiles.forEach((p, t) -> {
+            if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
+                setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, null);
+        });
+
+        for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+            if ((sectionMask >>> sectionIndex & 1) == 0)
+                continue;
+
+            ChunkSection section = sections[sectionIndex];
+            if (section == null) { //Section is null (filled with air)
+                GUChunkSection section1 = this.chunkSections[sectionIndex];
+                if (section1 == null)
+                    section1 = this.chunkSections[sectionIndex] = new GUChunkSection();
+                System.arraycopy(AsyncChunk.airFilled, 0, section1.contents, 0, AsyncChunk.airFilled.length);
+                continue;
+            }
+
+            for (int i = 0; i < 4096; i++) {
+                int x = getLX(i);
+                int y = getLY(i);
+                int z = getLZ(i);
+
+                int block = Block.REGISTRY.b(section.b(x, y, z));
+
+                short id = (short) (block >> 4 & 0xFF);
+                if (id == 0) id = -1;
+                byte dat = (byte) (block & 0xF);
+                this.writeBlock(sectionIndex, i, (dat << 12 | id) & 0xFFFF, false);
+            }
+
+            //Emitted light
+            System.arraycopy(section.getEmittedLightArray().a(), 0, chunkSections[sectionIndex].emittedLight, 0, section.getEmittedLightArray().a().length);
+        }
+
+        //Do this after writing blocks because writing blocks may set tile entities
+        //Load tile entities in specified sections
+        chunk.getTileEntities().forEach((p, t) -> {
+            if (t == null)
+                return;
+            if (((sectionMask >>> (p.getY() >> 4)) & 1) == 0)
+                return;
+            NBTTagCompound compound = new NBTTagCompound();
+            t.b(compound);
+            this.setTileEntity(p.getX() & 0xF, p.getY(), p.getZ() & 0xF, fromNMSCompound(compound));
+        });
+
+    }
+
+    public static TagCompound fromNMSCompound(NBTTagCompound compound) {
+        return (TagCompound) fromNMSTag(compound);
+    }
+
+    public static Tag fromNMSTag(NBTBase base) {
+        if (base instanceof NBTTagCompound) {
+            TagCompound compound = new TagCompound();
+            for (String key : ((NBTTagCompound) base).c()) {
+                compound.getData().put(key, fromNMSTag(((NBTTagCompound) base).get(key)));
+            }
+            return compound;
+        } else if (base instanceof NBTTagList) {
+            TagList list = new TagList();
+            for (int i = 0; i < ((NBTTagList) base).size(); i++) {
+                list.getData().add(fromNMSTag(((NBTTagList) base).g(i)));
+            }
+            return list;
+        } else if (base instanceof NBTTagShort) {
+            return new TagShort(((NBTTagShort) base).f());
+        } else if (base instanceof NBTTagLong) {
+            return new TagLong(((NBTTagLong) base).d());
+        } else if (base instanceof NBTTagInt) {
+            return new TagInt(((NBTTagInt) base).e());
+        } else if (base instanceof NBTTagByte) {
+            return new TagByte(((NBTTagByte) base).f());
+        } else if (base instanceof NBTTagIntArray) {
+            return new TagIntArray(((NBTTagIntArray) base).c());
+        } else if (base instanceof NBTTagDouble) {
+            return new TagDouble(((NBTTagDouble) base).g());
+        } else if (base instanceof NBTTagByteArray) {
+            return new TagByteArray(((NBTTagByteArray) base).c());
+        } else if (base instanceof NBTTagEnd) {
+            return new TagEnd();
+        } else if (base instanceof NBTTagFloat) {
+            return new TagFloat(((NBTTagFloat) base).h());
+        } else if (base instanceof NBTTagString) {
+            return new TagString(((NBTTagString) base).a_());
+        }
+        throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
+    }
+
+
+    public static NBTTagCompound fromGenericCompound(TagCompound compound) {
+        return (NBTTagCompound) fromGenericTag(compound);
+    }
+
+    public static NBTBase fromGenericTag(Tag tag) {
+        if (tag instanceof TagCompound) {
+            NBTTagCompound compound = new NBTTagCompound();
+            Map<String, Tag> tags = ((TagCompound) tag).getData();
+            tags.forEach((k, t) -> compound.set(k, fromGenericTag(t)));
+            return compound;
+        } else if (tag instanceof TagShort) {
+            return new NBTTagShort(((TagShort) tag).getData());
+        } else if (tag instanceof TagLong) {
+            return new NBTTagLong(((TagLong) tag).getData());
+        } else if (tag instanceof TagInt) {
+            return new NBTTagInt(((TagInt) tag).getData());
+        } else if (tag instanceof TagByte) {
+            return new NBTTagByte(((TagByte) tag).getData());
+        } else if (tag instanceof TagByteArray) {
+            return new NBTTagByteArray(((TagByteArray) tag).getData());
+        } else if (tag instanceof TagString) {
+            return new NBTTagString(((TagString) tag).getData());
+        } else if (tag instanceof TagList) {
+            NBTTagList list = new NBTTagList();
+            ((TagList) tag).getData().forEach(t -> list.add(fromGenericTag(t)));
+            return list;
+        } else if (tag instanceof TagIntArray) {
+            return new NBTTagIntArray(((TagIntArray) tag).getData());
+        } else if (tag instanceof TagFloat) {
+            return new NBTTagFloat(((TagFloat) tag).getData());
+        } else if (tag instanceof TagDouble) {
+            return new NBTTagDouble(((TagDouble) tag).getData());
+        }
+        throw new IllegalArgumentException("Tag is not of a recognized type (" + tag.getClass().getName() + ")");
+    }
+}

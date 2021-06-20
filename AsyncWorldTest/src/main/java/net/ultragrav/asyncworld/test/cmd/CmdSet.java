@@ -22,7 +22,8 @@ public class CmdSet extends AWCommand {
         WorldEditPlayerState state = getState();
 
         if (state.getPos1() == null || state.getPos2() == null) {
-            returnTell("§6§lAsyncWorld§8 > Please make a valid selection!");
+            tell("§6§lAsyncWorld§8 > Please make a valid selection!");
+            return;
         }
 
         CuboidRegion region = new CuboidRegion(state.getPos1(), state.getPos2());
