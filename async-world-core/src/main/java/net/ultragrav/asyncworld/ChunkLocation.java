@@ -25,4 +25,13 @@ public class ChunkLocation {
             return true;
         return getX() == ((ChunkLocation) o).getX() && getZ() == ((ChunkLocation) o).getZ() && world.getBukkitWorld().getUID().equals(((ChunkLocation) o).getWorld().getBukkitWorld().getUID());
     }
+
+    @Override
+    public String toString() {
+        return "ChunkLocation{" +
+                "world=" + world +
+                ", x=" + x +
+                ", z=" + z +
+                '}';
+    }
 }

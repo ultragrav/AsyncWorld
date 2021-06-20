@@ -97,6 +97,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void start() {
         getLoc().getWorld().getBukkitWorld().loadChunk(getLoc().getX(), getLoc().getZ());
+        validateCachedChunk();
     }
 
     @Override
@@ -134,6 +135,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         ms = System.currentTimeMillis();
         this.sendPackets(mask);
         ms = System.currentTimeMillis() - ms;
+        nmsCachedChunk = null;
     }
 
     @Override
@@ -353,8 +355,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void update() {
         //long ms = System.nanoTime();
+
         ChunkLocation loc = this.getLoc();
         Chunk nmsChunk = getNmsChunk();
+
         nmsCachedChunk = null;
 
         nmsChunk.mustSave = true;

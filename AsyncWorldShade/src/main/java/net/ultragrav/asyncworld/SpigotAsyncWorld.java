@@ -132,6 +132,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 int finalX = x1;
                 Runnable runnable = () -> {
                     AsyncChunk chunk = getChunk(finalX, finalZ);
+
                     int cxi = finalX << 4; //Chunk origin coordinates
                     int czi = finalZ << 4; //Chunk origin coordinates
 

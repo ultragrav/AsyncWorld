@@ -4,6 +4,10 @@ import net.minecraft.server.v1_12_R1.Chunk;
 import net.minecraft.server.v1_12_R1.ChunkRegionLoader;
 import net.minecraft.server.v1_12_R1.World;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
     private final CustomWorld customWorld;
 
@@ -11,6 +15,9 @@ public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
         super(null, null);
         this.customWorld = world;
     }
+
+    List<String> msgs = new ArrayList<>();
+    AtomicBoolean b = new AtomicBoolean(false);
 
     // Load chunk
     @Override
@@ -22,6 +29,10 @@ public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
         Chunk chunk = c.getStoredChunk();
         chunk.d(true);
         chunk.e(true);
+
+        if(x != chunk.locX || z != chunk.locZ)
+            throw new IllegalStateException("Chunk loaded was not of required location: " + x + " " + z + ", it was " + chunk.locX + " " + chunk.locZ);
+
         return chunk;
     }
 
