@@ -14,7 +14,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 public class SpigotCustomWorld extends CustomWorld {
@@ -391,32 +393,44 @@ public class SpigotCustomWorld extends CustomWorld {
         SavedCustomWorld save = new SavedCustomWorld(this.sizeChunksX, this.sizeChunksZ);
         AtomicBoolean scheduled = new AtomicBoolean(false);
         Map<Runnable, CompletableFuture<Void>> sync = new ConcurrentHashMap<>();
+        AtomicInteger integer = new AtomicInteger();
+        long ms = System.currentTimeMillis();
+        ForkJoinPool pool = new ForkJoinPool();
+        ReentrantLock lock = new ReentrantLock();
         for (CustomWorldAsyncChunk<?> chunk : asyncWorld.getChunkMap().getCachedCopy()) {
-            CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
-                    asyncIsSafe ? (run) -> {
-                        CompletableFuture<Void> future = new CompletableFuture<>();
-                        future.complete(null);
-                        run.run();
-                        return future;
-                    } : (run) -> {
-                        CompletableFuture<Void> future = new CompletableFuture<>();
-                        sync.put(run, future);
-                        if (scheduled.compareAndSet(false, true)) {
-                            new BukkitRunnable() {
-                                @Override
-                                public void run() {
-                                    scheduled.set(false);
-                                    sync.forEach((r, f) -> {
-                                        r.run();
-                                        f.complete(null);
-                                    });
-                                }
-                            }.runTask(plugin);
-                        }
-                        return future;
-                    });
-            save.getChunks().add(snap);
+            pool.submit(() -> {
+                CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
+                        asyncIsSafe ? (run) -> {
+                            CompletableFuture<Void> future = new CompletableFuture<>();
+                            future.complete(null);
+                            run.run();
+                            return future;
+                        } : (run) -> {
+                            CompletableFuture<Void> future = new CompletableFuture<>();
+                            sync.put(run, future);
+                            if (scheduled.compareAndSet(false, true)) {
+                                new BukkitRunnable() {
+                                    @Override
+                                    public void run() {
+                                        scheduled.set(false);
+                                        sync.forEach((r, f) -> {
+                                            r.run();
+                                            f.complete(null);
+                                        });
+                                    }
+                                }.runTask(plugin);
+                            }
+                            return future;
+                        });
+                lock.lock();
+                save.getChunks().add(snap);
+                lock.unlock();
+            });
         }
+        while(!pool.awaitQuiescence(1, TimeUnit.SECONDS))
+        pool.shutdown();
+        ms = System.currentTimeMillis() - ms;
+        System.out.println("Saved " + save.getChunks().size() + " chunks in " + ms + "ms");
 
         //Add all of the chunks that have not been loaded yet (if preloading = false)
         if (!preloaded.get())

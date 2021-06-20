@@ -271,7 +271,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
             return null;
         this.update();
         this.editedSections = 0;
-        this.chunkSections = new GUChunkSection[16];
+        this.chunkSections = new GUChunkSection[16];//TODO remove if cacheing
         fullSkyLight = false;
         return this;
     }

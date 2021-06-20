@@ -8,6 +8,7 @@ import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
 import net.ultragrav.asyncworld.schematics.Schematic;
+import net.ultragrav.serializer.GravSerializer;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
@@ -207,9 +208,17 @@ public class SpigotAsyncWorld extends AsyncWorld {
     public void syncForAllInRegion(CuboidRegion region, AsyncWorldTriConsumer<IntVector3D, Integer, TagCompound> action, boolean multiThread) {
         boolean isSync = Bukkit.isPrimaryThread();
 
+        int mask = 0;
+        int low = region.getMinimumY() >> 4;
+        int high = region.getMaximumY() >> 4;
+        for (int i = low; i <= high; i++) {
+            mask |= 1 << i;
+        }
+
+        int finalMask = mask;
         Runnable runnable = () -> {
             int threads = multiThread ? Runtime.getRuntime().availableProcessors() : 1;
-            actionBlocks(region, (chunk, x, y, z) -> action.accept(new IntVector3D(x, y, z), chunk.readBlock(x & 15, y, z & 15), chunk.getTile(x & 15, y, z & 15)), (c) -> c.refresh(0xFFFF), threads, true);
+            actionBlocks(region, (chunk, x, y, z) -> action.accept(new IntVector3D(x, y, z), chunk.readBlock(x & 15, y, z & 15), chunk.getTile(x & 15, y, z & 15)), (c) -> c.refresh(finalMask), threads, true);
         };
         if (isSync) {
             runnable.run();
@@ -580,9 +589,9 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 chunks.forEach(chunkPreprocessor);
 
             for (int x = region.getMinimumPoint().getBlockX(); x <= region.getMaximumPoint().getBlockX(); x++) {
-                for (int z = region.getMinimumPoint().getBlockZ(); z <= region.getMaximumPoint().getBlockZ(); z++) {
+                for (int z = region.getMinimumPoint().getBlockZ(), maxZ1 = region.getMaximumPoint().getBlockZ(); z <= maxZ1; z++) {
                     AsyncChunk chunk = getChunk(x >> 4, z >> 4);
-                    for (int y = region.getMinimumPoint().getBlockY(); y <= region.getMaximumPoint().getBlockY(); y++) {
+                    for (int y = region.getMinimumPoint().getBlockY(), maxY = region.getMaximumY(); y <= maxY; y++) {
                         try {
                             action.accept(chunk, x, y, z);
                         } catch (Exception e) {

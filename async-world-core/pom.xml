@@ -28,6 +28,10 @@
                     <groupId>org.spigotmc</groupId>
                     <artifactId>spigot</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>net.ultragrav</groupId>
+                    <artifactId>Serializer</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
