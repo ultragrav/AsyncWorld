@@ -10,6 +10,7 @@ import net.ultragrav.command.provider.impl.StringProvider;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 public class CmdLoadSchematic extends AWCommand {
@@ -39,7 +40,7 @@ public class CmdLoadSchematic extends AWCommand {
         WorldEditPlayerState state = getState();
 
         try {
-            Schematic schem = new Schematic(f);
+            Schematic schem = new Schematic(new FileInputStream(f), null);
             state.setClipboard(schem);
             tell("§aSchematic loaded successfully!");
         } catch (IOException e) {

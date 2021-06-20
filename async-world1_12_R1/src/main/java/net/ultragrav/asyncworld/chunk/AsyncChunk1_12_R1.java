@@ -96,7 +96,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     @Override
     public void start() {
-        getBukkitChunk().load(true);
+        getLoc().getWorld().getBukkitWorld().loadChunk(getLoc().getX(), getLoc().getZ());
     }
 
     @Override

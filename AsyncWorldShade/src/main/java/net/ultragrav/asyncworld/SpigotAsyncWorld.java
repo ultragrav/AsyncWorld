@@ -291,6 +291,25 @@ public class SpigotAsyncWorld extends AsyncWorld {
         chunk.setIgnore(x & 15, y, z & 15);
     }
 
+    /**
+     * Completes the operation synchronously, but fast
+     *
+     * @return Whether or not the operation completed before the timeout OR FALSE if the current thread is not the server main thread
+     */
+    @Override
+    public synchronized boolean syncFlush(int timeoutMs) {
+        if (!Bukkit.isPrimaryThread())
+            return false;
+        List<AsyncChunk> edited = chunkMap.getCachedCopy();
+        edited.removeIf(c -> {
+            c.optimize();
+            return !c.isEdited();
+        });
+        List<QueuedChunk> queue = edited.stream().map(QueuedChunk::new).collect(Collectors.toList());
+        chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
+        this.chunkMap.clear();
+        return edited.isEmpty();
+    }
 
     @Override
     public CompletableFuture<Void> flush() {
@@ -396,26 +415,6 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }.runTask(chunkQueue.getPlugin());
             future.join();
         }
-    }
-
-    /**
-     * Completes the operation synchronously, but fast
-     *
-     * @return Whether or not the operation completed before the timeout OR FALSE if the current thread is not the server main thread
-     */
-    @Override
-    public synchronized boolean syncFlush(int timeoutMs) {
-        if (!Bukkit.isPrimaryThread())
-            return false;
-        List<AsyncChunk> edited = chunkMap.getCachedCopy();
-        edited.removeIf(c -> {
-            c.optimize();
-            return !c.isEdited();
-        });
-        List<QueuedChunk> queue = edited.stream().map(QueuedChunk::new).collect(Collectors.toList());
-        chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
-        this.chunkMap.clear();
-        return edited.isEmpty();
     }
 
     @Override

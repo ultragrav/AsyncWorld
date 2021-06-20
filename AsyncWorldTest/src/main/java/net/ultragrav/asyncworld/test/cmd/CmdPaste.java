@@ -32,16 +32,19 @@ public class CmdPaste extends AWCommand {
         WorldEditPlayerState state = getState();
         Schematic schem = state.getClipboard();
 
-        service.submit(() -> {
+        //service.submit(() -> {
             AsyncWorld world = new SpigotAsyncWorld(player.getLocation().getWorld());
             long ms = System.currentTimeMillis();
             world.pasteSchematic(schem, IntVector3D.fromBukkitVector(player.getLocation().toVector()));
             player.sendMessage("§6§lAsyncWorld§8 > Pasted in memory in " + ((System.currentTimeMillis() - ms) / 1000D) + "s");
-            world.flush().thenAccept((vo) -> {
-                double time = (System.currentTimeMillis() - ms) / 1000D;
-                player.sendMessage("§6§lAsyncWorld§8 > Pasted in " + time + "s");
-            });
+            if(!world.syncFlush(2000)) {
+                System.out.println("Big Problem!!!!");
+            }
+//            .thenAccept((vo) -> {
+//                double time = (System.currentTimeMillis() - ms) / 1000D;
+//                player.sendMessage("§6§lAsyncWorld§8 > Pasted in " + time + "s");
+//            });
             player.sendMessage("§6§lAsyncWorld§8 > Flushed in memory in " + ((System.currentTimeMillis() - ms) / 1000D) + "s");
-        });
+        //});
     }
 }
