@@ -108,7 +108,6 @@ public class ChunkQueue implements Listener {
                         //NOTE this is a just the scheduling of the task, not the execution, so this doesn't take long
                         ForkJoinPool.commonPool().execute(() -> {
                             try {
-                                System.out.println("A");
                                 synchronized (chunk) { //synchronized so the editedSections is correct
                                     masks.put(chunk, chunk.getEditedSections());
                                     chunk.call();
