@@ -307,10 +307,40 @@ public class SpigotAsyncWorld extends AsyncWorld {
             c.optimize();
             return !c.isEdited();
         });
+
+        Map<AsyncChunk, Integer> masks = new HashMap<>();
+        for (AsyncChunk chunk : edited) {
+            int editedSections = chunk.getEditedSections();
+            for (int i = 0; i < 16; i++) {
+                boolean a = ((editedSections >>> i) & 1) != 0;
+                if (a && i != 0) {
+                    editedSections |= 1 << (i - 1);
+                }
+                if (a && i != 15) {
+                    editedSections |= 1 << (++i);
+                }
+            }
+            masks.put(chunk, editedSections);
+        }
+
         List<QueuedChunk> queue = edited.stream().map(QueuedChunk::new).collect(Collectors.toList());
         chunkQueue.update(queue, new ReentrantLock(true), timeoutMs);
+
+        edited.forEach(c -> {
+            int mask = masks.get(c);
+            Relighter.RelightAction[] actions = new Relighter.RelightAction[16];
+            for (int i = 0; i < 16; i++) {
+                if ((mask >>> i & 1) == 1) {
+                    actions[i] = Relighter.RelightAction.ACTION_RELIGHT;
+                } else {
+                    actions[i] = Relighter.RelightAction.ACTION_SKIP_AIR;
+                }
+            }
+            relighter.queueSkyRelight(c, actions);
+        });
+
         this.chunkMap.clear();
-        return edited.isEmpty();
+        return queue.isEmpty();
     }
 
     @Override
@@ -573,7 +603,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                         for (int y = minBlockY; y <= maxBlockY; y++) {
                             try {
                                 action.accept(chunk, x + bx, y, z + bz);
-                            } catch(Exception e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
@@ -638,7 +668,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     Runnable runnable = () -> {
                         try {
                             action.accept(chunk);
-                        } catch(Exception e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     };

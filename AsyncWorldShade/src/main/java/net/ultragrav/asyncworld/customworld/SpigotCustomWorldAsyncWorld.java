@@ -73,6 +73,10 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
         return chunk.readBlock(x & 15, y, z & 15);
     }
 
+    public void pasteSchematic(Schematic schematic, IntVector3D position) {
+        pasteSchematic(schematic, position, false);
+    }
+
     public void pasteSchematic(Schematic schematic, IntVector3D position, boolean ignoreAir) {
         position = position.subtract(schematic.getOrigin());
 
@@ -149,15 +153,9 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
 
         if (threads != 1) {
-            while (!pool.isQuiescent()) {
-                pool.awaitQuiescence(1, TimeUnit.SECONDS);
-            }
+            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS));
             pool.shutdown();
         }
-    }
-
-    public void pasteSchematic(Schematic schematic, IntVector3D position) {
-        pasteSchematic(schematic, position, false);
     }
 
     public void setBlocks(CuboidRegion region, Supplier<Short> blockSupplier) {
