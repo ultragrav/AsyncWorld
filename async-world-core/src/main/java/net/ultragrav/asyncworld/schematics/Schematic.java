@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncWorld;
-import net.ultragrav.asyncworld.nbt.TagCompound;
+import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.serializer.Compressor;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;

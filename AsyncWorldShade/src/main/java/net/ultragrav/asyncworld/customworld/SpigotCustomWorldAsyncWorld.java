@@ -2,10 +2,9 @@ package net.ultragrav.asyncworld.customworld;
 
 import lombok.Getter;
 import net.ultragrav.asyncworld.AsyncChunk;
-import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
-import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.schematics.Schematic;
+import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
@@ -153,7 +152,7 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
 
         if (threads != 1) {
-            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS));
+            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS)) ;
             pool.shutdown();
         }
     }

@@ -7,7 +7,7 @@
     <parent>
         <artifactId>AsyncWorld</artifactId>
         <groupId>net.ultragrav</groupId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
     </parent>
 
     <artifactId>AsyncWorldShade</artifactId>

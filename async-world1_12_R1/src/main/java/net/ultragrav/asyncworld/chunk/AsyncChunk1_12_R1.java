@@ -2,10 +2,12 @@ package net.ultragrav.asyncworld.chunk;
 
 import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncChunk;
-import net.ultragrav.asyncworld.AsyncChunk.GUChunkSection;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
-import net.ultragrav.asyncworld.nbt.*;
+import net.ultragrav.nbt.conversion.NBTConversion;
+import net.ultragrav.nbt.wrapper.Tag;
+import net.ultragrav.nbt.wrapper.TagCompound;
+import net.ultragrav.nbt.wrapper.TagInt;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
@@ -121,7 +123,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             TileEntity entity = nmsChunk.getWorld().getTileEntity(bp); //Get or Create tile entity or null if none is applicable to the block at that position
 
             if (entity != null) {
-                //Set Tile Entity's Coordinates in it's NBT
+                //Set Tile Entity's Coordinates in its NBT
                 te.getData().put("x", new TagInt(bp.getX()));
                 te.getData().put("y", new TagInt(bp.getY()));
                 te.getData().put("z", new TagInt(bp.getZ()));
@@ -570,47 +572,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     public static Tag fromNMSTag(NBTBase base) {
-        if (base instanceof NBTTagCompound) {
-            TagCompound compound = new TagCompound();
-            for (String key : ((NBTTagCompound) base).c()) {
-                compound.getData().put(key, fromNMSTag(((NBTTagCompound) base).get(key)));
-            }
-            return compound;
-        } else if (base instanceof NBTTagList) {
-            TagList list = new TagList();
-            for (int i = 0; i < ((NBTTagList) base).size(); i++) {
-                list.getData().add(fromNMSTag(((NBTTagList) base).i(i)));
-            }
-            return list;
-        } else if (base instanceof NBTTagLongArray) {
-            try {
-                return new TagLongArray((long[]) fieldLongArray.get(base));
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-                return new TagLongArray(new long[0]);
-            }
-        } else if (base instanceof NBTTagShort) {
-            return new TagShort(((NBTTagShort) base).f());
-        } else if (base instanceof NBTTagLong) {
-            return new TagLong(((NBTTagLong) base).d());
-        } else if (base instanceof NBTTagInt) {
-            return new TagInt(((NBTTagInt) base).e());
-        } else if (base instanceof NBTTagByte) {
-            return new TagByte(((NBTTagByte) base).g());
-        } else if (base instanceof NBTTagIntArray) {
-            return new TagIntArray(((NBTTagIntArray) base).d());
-        } else if (base instanceof NBTTagDouble) {
-            return new TagDouble(((NBTTagDouble) base).asDouble());
-        } else if (base instanceof NBTTagByteArray) {
-            return new TagByteArray(((NBTTagByteArray) base).c());
-        } else if (base instanceof NBTTagEnd) {
-            return new TagEnd();
-        } else if (base instanceof NBTTagFloat) {
-            return new TagFloat(((NBTTagFloat) base).i());
-        } else if (base instanceof NBTTagString) {
-            return new TagString(((NBTTagString) base).c_());
-        }
-        throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
+        return NBTConversion.wrapTag(base);
     }
 
 
@@ -619,36 +581,6 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     }
 
     public static NBTBase fromGenericTag(Tag tag) {
-        if (tag instanceof TagCompound) {
-            NBTTagCompound compound = new NBTTagCompound();
-            Map<String, Tag> tags = ((TagCompound) tag).getData();
-            tags.forEach((k, t) -> compound.set(k, fromGenericTag(t)));
-            return compound;
-        } else if (tag instanceof TagShort) {
-            return new NBTTagShort(((TagShort) tag).getData());
-        } else if (tag instanceof TagLong) {
-            return new NBTTagLong(((TagLong) tag).getData());
-        } else if (tag instanceof TagLongArray) {
-            return new NBTTagLongArray(((TagLongArray) tag).getData());
-        } else if (tag instanceof TagInt) {
-            return new NBTTagInt(((TagInt) tag).getData());
-        } else if (tag instanceof TagByte) {
-            return new NBTTagByte(((TagByte) tag).getData());
-        } else if (tag instanceof TagByteArray) {
-            return new NBTTagByteArray(((TagByteArray) tag).getData());
-        } else if (tag instanceof TagString) {
-            return new NBTTagString(((TagString) tag).getData());
-        } else if (tag instanceof TagList) {
-            NBTTagList list = new NBTTagList();
-            ((TagList) tag).getData().forEach(t -> list.add(fromGenericTag(t)));
-            return list;
-        } else if (tag instanceof TagIntArray) {
-            return new NBTTagIntArray(((TagIntArray) tag).getData());
-        } else if (tag instanceof TagFloat) {
-            return new NBTTagFloat(((TagFloat) tag).getData());
-        } else if (tag instanceof TagDouble) {
-            return new NBTTagDouble(((TagDouble) tag).getData());
-        }
-        throw new IllegalArgumentException("Tag is not of a recognized type (" + tag.getClass().getName() + ")");
+        return NBTConversion.unwrapTag(tag, "v1_12_R1");
     }
 }

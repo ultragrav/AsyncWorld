@@ -4,10 +4,10 @@ import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
-import net.ultragrav.asyncworld.nbt.Tag;
-import net.ultragrav.asyncworld.nbt.TagCompound;
-import net.ultragrav.asyncworld.nbt.TagInt;
-import net.ultragrav.asyncworld.nbt.TagList;
+import net.ultragrav.nbt.wrapper.Tag;
+import net.ultragrav.nbt.wrapper.TagCompound;
+import net.ultragrav.nbt.wrapper.TagInt;
+import net.ultragrav.nbt.wrapper.TagList;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
@@ -16,6 +16,7 @@ import java.util.*;
 public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer> {
 
     private static final byte[] maxFilledSkyLight = new byte[2048];
+
     static {
         Arrays.fill(maxFilledSkyLight, (byte) 0xFF);
     }
@@ -112,7 +113,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
     @Override
     public boolean sectionExists(int section) {
-        if(getNmsChunk() == null)
+        if (getNmsChunk() == null)
             return false;
         return getNmsChunk().getSections()[section] != null;
     }
@@ -247,7 +248,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
                     try {
                         AsyncChunk1_12_R1.setCount(0, nonAirCounts[i], section);
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }

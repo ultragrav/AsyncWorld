@@ -3,12 +3,10 @@ package net.ultragrav.asyncworld.customworld;
 import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncChunk;
-import net.ultragrav.asyncworld.nbt.TagCompound;
+import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -159,7 +157,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
 
     private static String getMask(short s) {
         StringBuilder builder = new StringBuilder();
-        for(int i = 15; i >= 0; i--) {
+        for (int i = 15; i >= 0; i--) {
             builder.append(s >>> i & 1);
         }
         return builder.toString();
@@ -212,7 +210,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
             snap.setX(chunk.getLoc().getX());
             snap.setZ(chunk.getLoc().getZ());
             return snap;
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             t.printStackTrace();
             throw t;
         }

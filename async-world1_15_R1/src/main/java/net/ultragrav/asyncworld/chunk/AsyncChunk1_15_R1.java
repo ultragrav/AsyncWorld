@@ -5,8 +5,9 @@ import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.Stringify;
-import net.ultragrav.asyncworld.nbt.*;
-import net.ultragrav.asyncworld.nbt.Tag;
+import net.ultragrav.nbt.conversion.NBTConversion;
+import net.ultragrav.nbt.wrapper.*;
+import net.ultragrav.nbt.wrapper.Tag;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_15_R1.CraftChunk;
@@ -586,47 +587,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
     }
 
     public static Tag fromNMSTag(NBTBase base) {
-        if (base instanceof NBTTagCompound) {
-            TagCompound compound = new TagCompound();
-            for (String key : ((NBTTagCompound) base).getKeys()) {
-                compound.getData().put(key, fromNMSTag(((NBTTagCompound) base).get(key)));
-            }
-            return compound;
-        } else if (base instanceof NBTTagList) {
-            TagList list = new TagList();
-            for (int i = 0; i < ((NBTTagList) base).size(); i++) {
-                list.getData().add(fromNMSTag(((NBTTagList) base).get(i)));
-            }
-            return list;
-        } else if (base instanceof NBTTagLongArray) {
-            try {
-                return new TagLongArray((long[]) fieldLongArray.get(base));
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-                return new TagLongArray(new long[0]);
-            }
-        } else if (base instanceof NBTTagShort) {
-            return new TagShort(((NBTTagShort) base).asShort());
-        } else if (base instanceof NBTTagLong) {
-            return new TagLong(((NBTTagLong) base).asLong());
-        } else if (base instanceof NBTTagInt) {
-            return new TagInt(((NBTTagInt) base).asInt());
-        } else if (base instanceof NBTTagByte) {
-            return new TagByte(((NBTTagByte) base).asByte());
-        } else if (base instanceof NBTTagIntArray) {
-            return new TagIntArray(((NBTTagIntArray) base).getInts());
-        } else if (base instanceof NBTTagDouble) {
-            return new TagDouble(((NBTTagDouble) base).asDouble());
-        } else if (base instanceof NBTTagByteArray) {
-            return new TagByteArray(((NBTTagByteArray) base).getBytes());
-        } else if (base instanceof NBTTagEnd) {
-            return new TagEnd();
-        } else if (base instanceof NBTTagFloat) {
-            return new TagFloat(((NBTTagFloat) base).asFloat());
-        } else if (base instanceof NBTTagString) {
-            return new TagString(base.asString());
-        }
-        throw new IllegalArgumentException("NBTTag is not of a recognized type (" + base.getClass().getName() + ")");
+        return NBTConversion.wrapTag(base);
     }
 
 
@@ -635,36 +596,6 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
     }
 
     public static NBTBase fromGenericTag(Tag tag) {
-        if (tag instanceof TagCompound) {
-            NBTTagCompound compound = new NBTTagCompound();
-            Map<String, Tag> tags = ((TagCompound) tag).getData();
-            tags.forEach((k, t) -> compound.set(k, fromGenericTag(t)));
-            return compound;
-        } else if (tag instanceof TagShort) {
-            return NBTTagShort.a(((TagShort) tag).getData());
-        } else if (tag instanceof TagLong) {
-            return NBTTagLong.a(((TagLong) tag).getData());
-        } else if (tag instanceof TagLongArray) {
-            return new NBTTagLongArray(((TagLongArray) tag).getData());
-        } else if (tag instanceof TagInt) {
-            return NBTTagInt.a(((TagInt) tag).getData());
-        } else if (tag instanceof TagByte) {
-            return NBTTagByte.a(((TagByte) tag).getData());
-        } else if (tag instanceof TagByteArray) {
-            return new NBTTagByteArray(((TagByteArray) tag).getData());
-        } else if (tag instanceof TagString) {
-            return NBTTagString.a(((TagString) tag).getData());
-        } else if (tag instanceof TagList) {
-            NBTTagList list = new NBTTagList();
-            ((TagList) tag).getData().forEach(t -> list.add(fromGenericTag(t)));
-            return list;
-        } else if (tag instanceof TagIntArray) {
-            return new NBTTagIntArray(((TagIntArray) tag).getData());
-        } else if (tag instanceof TagFloat) {
-            return NBTTagFloat.a(((TagFloat) tag).getData());
-        } else if (tag instanceof TagDouble) {
-            return NBTTagDouble.a(((TagDouble) tag).getData());
-        }
-        throw new IllegalArgumentException("Tag is not of a recognized type (" + tag.getClass().getName() + ")");
+        return NBTConversion.unwrapTag(tag, "v1_15_R1");
     }
 }
