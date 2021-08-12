@@ -312,6 +312,10 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     }
 
     @Override
+    public void setCombinedBlockSync(int x, int y, int z, int combinedBlock) {
+    }
+
+    @Override
     protected void optimizeSection(int i, GUChunkSection guChunkSection) {
 
     }

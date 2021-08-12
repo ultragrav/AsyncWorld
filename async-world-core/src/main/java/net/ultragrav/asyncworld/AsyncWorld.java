@@ -21,6 +21,8 @@ public abstract class AsyncWorld {
 
     public abstract int syncGetBlock(int x, int y, int z);
 
+    public abstract void syncSetBlock(int x, int y, int z, int id, int data);
+
     public abstract int getCachedBlock(int x, int y, int z);
 
     public abstract void pasteSchematic(Schematic schematic, IntVector3D position);

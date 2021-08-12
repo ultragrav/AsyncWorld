@@ -74,6 +74,18 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
     }
 
     @Override
+    public void setCombinedBlockSync(int x, int y, int z, int combinedBlock) {
+        Chunk nmsChunk = getNmsChunk();
+        ChunkSection[] sections = nmsChunk.getSections();
+        ChunkSection section = sections[y >>> 4];
+        if (section == null) {
+            sections[y >>> 4] = section = new ChunkSection(y & (~0xF), getBukkitChunk().getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL);
+        }
+        IBlockData data = Block.getByCombinedId(combinedBlock);
+        section.setType(x, y & 15, z, data);
+    }
+
+    @Override
     protected void optimizeSection(int index, GUChunkSection section) {
 //        DataPaletteBlock palette = new DataPaletteBlock();
 //        int airCount = 0;
@@ -191,7 +203,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
             return;
         int sectionIndex = y >> 4;
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
-            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, nmsCachedChunk.getWorld().getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL);
         }
         nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);
     }
@@ -203,7 +215,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
             return;
         int sectionIndex = y >> 4;
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
-            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+            nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, nmsCachedChunk.getWorld().getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL);
         }
         nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
     }
@@ -418,7 +430,7 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
             if (completelyEdited) {
                 compEdited++;
                 if (section == null)
-                    section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+                    section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, nmsChunk.getWorld().getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL);
                 System.arraycopy(guChunkSection.emittedLight, 0,
                         section.getEmittedLightArray().a(), 0, guChunkSection.emittedLight.length);
 

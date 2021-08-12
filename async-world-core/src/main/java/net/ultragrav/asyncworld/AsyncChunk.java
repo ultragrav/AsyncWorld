@@ -1,5 +1,6 @@
 package net.ultragrav.asyncworld;
 
+import jdk.incubator.foreign.MemorySegment;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -246,6 +247,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public abstract void sendPackets(int mask);
 
     public abstract int getCombinedBlockSync(int x, int y, int z);
+    public abstract void setCombinedBlockSync(int x, int y, int z, int combinedBlock);
 
     public synchronized void optimize() {
         for (int i = 0; i < chunkSections.length; i++) {

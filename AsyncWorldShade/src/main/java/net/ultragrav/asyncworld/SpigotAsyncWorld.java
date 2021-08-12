@@ -86,6 +86,11 @@ public class SpigotAsyncWorld extends AsyncWorld {
         return getChunk(x >> 4, z >> 4).getCombinedBlockSync(x & 15, y, z & 15) & 0xFFFF;
     }
 
+    @Override
+    public void syncSetBlock(int x, int y, int z, int id, int data) {
+        getChunk(x >> 4, z >> 4).setCombinedBlockSync(x, y, z, data << 12 | id);
+    }
+
     /**
      * Gets the cached block at the specified location<br>NOTE: the block might be -1 if you have not called refresh()
      *

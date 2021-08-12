@@ -68,6 +68,18 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
     }
 
     @Override
+    public void setCombinedBlockSync(int x, int y, int z, int combinedBlock) {
+        Chunk nmsChunk = getNmsChunk();
+        ChunkSection[] sections = nmsChunk.getSections();
+        ChunkSection section = sections[y >>> 4];
+        if (section == null) {
+            sections[y >>> 4] = section = new ChunkSection(y & (~0xF));
+        }
+        IBlockData data = Block.getByCombinedId(combinedBlock);
+        section.setType(x, y & 15, z, data);
+    }
+
+    @Override
     protected void optimizeSection(int index, GUChunkSection section) {
         /*DataPaletteBlock palette = new DataPaletteBlock(new DataPaletteLinear(4, this));
         int airCount = 0;
