@@ -1,7 +1,7 @@
 package net.ultragrav.asyncworld;
 
-import net.ultragrav.asyncworld.nbt.TagCompound;
 import net.ultragrav.asyncworld.schematics.Schematic;
+import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;

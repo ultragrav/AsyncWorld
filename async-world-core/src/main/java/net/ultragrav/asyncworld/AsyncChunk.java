@@ -4,7 +4,7 @@ import jdk.incubator.foreign.MemorySegment;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import net.ultragrav.asyncworld.nbt.TagCompound;
+import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.Bukkit;
