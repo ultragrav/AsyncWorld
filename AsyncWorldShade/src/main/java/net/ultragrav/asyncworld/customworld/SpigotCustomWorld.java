@@ -2,7 +2,6 @@ package net.ultragrav.asyncworld.customworld;
 
 import lombok.Getter;
 import net.ultragrav.asyncworld.AsyncChunk;
-import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.SpigotAsyncWorld;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
@@ -11,7 +10,9 @@ import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,24 +98,36 @@ public class SpigotCustomWorld extends CustomWorld {
     @Override
     public synchronized void create(Consumer<CustomWorldAsyncWorld> generator) {
 
+
+        long createWorldMs = -1;
+
         if (!startedCreation.compareAndSet(false, true))
             throw new RuntimeException("World already created!");
 
         //Create world server
-        if (worldHandler == null)
+        if (worldHandler == null) {
             createWorldHandler();
-        if (!worldHandler.isWorldCreated())
+        }
+        if (!worldHandler.isWorldCreated()) {
+            createWorldMs = System.currentTimeMillis();
             worldHandler.createWorld(this, name);
+            createWorldMs = System.currentTimeMillis() - createWorldMs;
+        }
 
+        long loadChunkMs = System.currentTimeMillis();
         this.preloaded.set(true);
         for (int x = 0; x < sizeChunksX; x++) {
             for (int z = 0; z < sizeChunksZ; z++) {
                 this.asyncWorld.getChunk(x, z);
             }
         }
+        loadChunkMs = System.currentTimeMillis() - loadChunkMs;
+
 
         //Generate world
+        long generateMs = System.currentTimeMillis();
         generator.accept(asyncWorld);
+        generateMs = System.currentTimeMillis() - generateMs;
 
         //Set chunks' sections (write to world)
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()); //Multi-threaded
@@ -127,11 +140,15 @@ public class SpigotCustomWorld extends CustomWorld {
                 t.printStackTrace();
             }
         })); //Submit tasks
+
+        long finishChunksMs = System.currentTimeMillis();
         while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
         pool.shutdown();
+        finishChunksMs = System.currentTimeMillis() - finishChunksMs;
 
 
         //Add to world list (Must be sync)
+        long addWorldListMs = System.currentTimeMillis();
         if (!Bukkit.isPrimaryThread()) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             new BukkitRunnable() {
@@ -145,10 +162,13 @@ public class SpigotCustomWorld extends CustomWorld {
         } else {
             worldHandler.addToWorldList();
         }
+        addWorldListMs = System.currentTimeMillis() - addWorldListMs;
 
         queueSkyRelight(chunks); //Relight chunks
 
         loaded.set(true);
+
+        System.out.println("Finished, times: " + createWorldMs + " " + loadChunkMs + " " + generateMs + " " + finishChunksMs + " " + addWorldListMs);
     }
 
     private String getMask(short s) {
@@ -363,8 +383,9 @@ public class SpigotCustomWorld extends CustomWorld {
     public void unload() {
         this.asyncWorld = new SpigotCustomWorldAsyncWorld(this, this.plugin); //In case something has a reference to the world server, and therefore this object,
         //It's a good idea to dereference the async world and therefore all the chunks inside of it
-        if (this.getBukkitWorld() == null)
+        if (this.getBukkitWorld() == null) {
             return;
+        }
         if (loaded.compareAndSet(true, false)) {
             if (Bukkit.getWorld(this.getBukkitWorld().getUID()) != null) {
                 Bukkit.unloadWorld(this.getBukkitWorld(), false);
@@ -427,8 +448,8 @@ public class SpigotCustomWorld extends CustomWorld {
                 lock.unlock();
             });
         }
-        while(!pool.awaitQuiescence(1, TimeUnit.SECONDS))
-        pool.shutdown();
+        while (!pool.awaitQuiescence(1, TimeUnit.SECONDS))
+            pool.shutdown();
         ms = System.currentTimeMillis() - ms;
         System.out.println("Saved " + save.getChunks().size() + " chunks in " + ms + "ms");
 

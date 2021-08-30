@@ -75,6 +75,11 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             }
             craftBukkitWorldMap.setAccessible(false);
 
+            MinecraftServer mcServer = MinecraftServer.getServer();
+
+            if(mcServer.server.getWorld(name) != null)
+                throw new IllegalStateException("Tried to create world that already exists. Name: " + name);
+
             dimension = CraftWorld.CUSTOM_DIMENSION_OFFSET + Bukkit.getServer().getWorlds().size();
             boolean used = true;
 
@@ -92,12 +97,10 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             long ms = System.currentTimeMillis();
             world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
             ms = System.currentTimeMillis() - ms;
-            System.out.println("World instantiation: " + ms + "ms");
             safetyLock.lock();
             ms = System.currentTimeMillis();
             world.b();
             ms = System.currentTimeMillis() - ms;
-            System.out.println("World.b(): " + ms + "ms");
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -118,6 +121,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
 
         addLock.lock(); // Not necessary but just makes me feel better
         try {
+
             if (mcServer.server.getWorld(world.getWorld().getUID()) == null) {
                 mcServer.server.addWorld(world.getWorld());
             }

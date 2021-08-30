@@ -199,6 +199,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         }
 
         //Set lighting (sky, emitted), blocks, and height map
+        byte[][] blocks = CustomWorldChunkSnap.getBlocksInternal(snap); //NMS copies this so we don't have to.
+        byte[][] blockData = CustomWorldChunkSnap.getBlockDataInternal(snap); //^
+        byte[][] skyLight = snap.getSkyLight(); //NMS does not copy this, so we have to.
+        byte[][] emittedLight = snap.getEmittedLight(); //^
+
         short mask = snap.getSectionBitMask();
         for (int i = 0; i < 16; i++) {
             if (((mask >>> i) & 1) == 0)
@@ -206,10 +211,10 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
             ChunkSection section = sects[i] = new ChunkSection(i << 4, true);
 
-            section.b(new NibbleArray(snap.getSkyLight()[i])); //Sky light
-            section.a(new NibbleArray(snap.getEmittedLight()[i])); //Emitted light
+            section.b(new NibbleArray(skyLight[i])); //Sky light
+            section.a(new NibbleArray(emittedLight[i])); //Emitted light
 
-            section.getBlocks().a(snap.getBlocks()[i], new NibbleArray(snap.getBlockData()[i]), null); //Blocks
+            section.getBlocks().a(blocks[i], new NibbleArray(blockData[i]), null); //Blocks
         }
 
         System.arraycopy(snap.getHeightMap(), 0, heightMap, 0, heightMap.length); //Height map

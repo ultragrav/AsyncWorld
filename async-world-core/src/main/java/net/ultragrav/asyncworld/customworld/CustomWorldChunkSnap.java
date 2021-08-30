@@ -47,6 +47,26 @@ public class CustomWorldChunkSnap implements GravSerializable {
         this.sectionBitMask = sectionBitMask;
     }
 
+    public static byte[][] getBlocksInternal(CustomWorldChunkSnap snap) {
+        return snap.blocks;
+    }
+    //Block data.
+    public static byte[][] getBlockDataInternal(CustomWorldChunkSnap snap) {
+        return snap.blockData;
+    }
+    //Sky light.
+    public static byte[][] getSkyLightInternal(CustomWorldChunkSnap snap) {
+        return snap.skyLight;
+    }
+    //Emitted light.
+    public static byte[][] getEmittedLightInternal(CustomWorldChunkSnap snap) {
+        return snap.emittedLight;
+    }
+    //Height map.
+    public static int[] getHeightMapInternal(CustomWorldChunkSnap snap) {
+        return snap.heightMap;
+    }
+
     public int[] getHeightMap() {
         return Arrays.copyOf(heightMap, heightMap.length);
     }

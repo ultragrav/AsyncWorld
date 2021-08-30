@@ -16,6 +16,7 @@ public class CustomWorldServer1_12 extends WorldServer {
                 new CustomWorldChunkGenerator1_12()
         );
         this.keepSpawnInMemory = false;
+        this.C = new AdvancementDataWorld(null);//TODO maybe remove if causes crashes.
         this.D = new CustomFunctionData(null, MinecraftServer.getServer());
         this.tracker = new EntityTracker(this);
         addIWorldAccess(new WorldManager(MinecraftServer.getServer(), this));

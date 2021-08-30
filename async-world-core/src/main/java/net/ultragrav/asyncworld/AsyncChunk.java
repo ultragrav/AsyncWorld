@@ -1,6 +1,5 @@
 package net.ultragrav.asyncworld;
 
-import jdk.incubator.foreign.MemorySegment;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
