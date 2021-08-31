@@ -26,9 +26,7 @@ public class CustomWorldServer1_12 extends WorldServer {
     }
 
     @Override
-    public void save(boolean forceSave, IProgressUpdate progressUpdate) throws ExceptionWorldConflict {
-        super.save(forceSave, progressUpdate);
-    }
+    public void save(boolean forceSave, IProgressUpdate progressUpdate) throws ExceptionWorldConflict {}
 
     private void save() {}
 }
