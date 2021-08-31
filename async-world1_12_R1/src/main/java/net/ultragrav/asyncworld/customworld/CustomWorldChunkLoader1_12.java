@@ -2,17 +2,18 @@ package net.ultragrav.asyncworld.customworld;
 
 import net.minecraft.server.v1_12_R1.Chunk;
 import net.minecraft.server.v1_12_R1.ChunkRegionLoader;
+import net.minecraft.server.v1_12_R1.IChunkLoader;
 import net.minecraft.server.v1_12_R1.World;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CustomWorldChunkLoader1_12 extends ChunkRegionLoader {
+public class CustomWorldChunkLoader1_12 implements IChunkLoader {
     private final CustomWorld customWorld;
 
     public CustomWorldChunkLoader1_12(CustomWorld world) {
-        super(null, null);
         this.customWorld = world;
     }
 

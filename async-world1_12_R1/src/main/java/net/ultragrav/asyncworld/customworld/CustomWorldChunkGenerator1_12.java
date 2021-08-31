@@ -6,9 +6,9 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.Random;
 
 public class CustomWorldChunkGenerator1_12 extends ChunkGenerator {
-    private static final byte[] empty = new byte[16*16*256];
+    private static final byte[] EMPTY = new byte[16*16*256];
 
     public byte[] generate(World world, Random random, int x, int z) {
-        return empty;
+        return EMPTY;
     }
 }
