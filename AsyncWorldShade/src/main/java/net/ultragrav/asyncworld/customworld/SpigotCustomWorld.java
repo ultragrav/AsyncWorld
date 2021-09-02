@@ -418,14 +418,15 @@ public class SpigotCustomWorld extends CustomWorld {
         long ms = System.currentTimeMillis();
         ForkJoinPool pool = new ForkJoinPool();
         ReentrantLock lock = new ReentrantLock();
+
+        boolean isPrimaryThread =  Bukkit.isPrimaryThread();
+
         for (CustomWorldAsyncChunk<?> chunk : asyncWorld.getChunkMap().getCachedCopy()) {
             pool.submit(() -> {
                 CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
-                        asyncIsSafe ? (run) -> {
-                            CompletableFuture<Void> future = new CompletableFuture<>();
-                            future.complete(null);
+                        asyncIsSafe || isPrimaryThread ? (run) -> {
                             run.run();
-                            return future;
+                            return CompletableFuture.completedFuture(null);
                         } : (run) -> {
                             CompletableFuture<Void> future = new CompletableFuture<>();
                             sync.put(run, future);

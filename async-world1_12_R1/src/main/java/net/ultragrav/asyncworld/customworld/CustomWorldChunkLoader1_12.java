@@ -17,9 +17,6 @@ public class CustomWorldChunkLoader1_12 implements IChunkLoader {
         this.customWorld = world;
     }
 
-    List<String> msgs = new ArrayList<>();
-    AtomicBoolean b = new AtomicBoolean(false);
-
     // Load chunk
     @Override
     public Chunk a(World nmsWorld, int x, int z) {
