@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -241,6 +240,7 @@ public class SpigotCustomWorld extends CustomWorld {
                     this.asyncWorld.getChunk(x, z);
                 }
             }
+
             //
 
             ms = System.currentTimeMillis();
@@ -410,16 +410,22 @@ public class SpigotCustomWorld extends CustomWorld {
         return this.asyncWorld;
     }
 
+    /**
+     * Saves the world.
+     *
+     * @param asyncWorld  The world to save.
+     * @param asyncIsSafe Whether or not the world is safe to save asynchronously.
+     * @return The saved world.
+     */
     private SavedCustomWorld save(SpigotCustomWorldAsyncWorld asyncWorld, boolean asyncIsSafe) {
-        SavedCustomWorld save = new SavedCustomWorld(this.sizeChunksX, this.sizeChunksZ);
+        SavedCustomWorld save = new SavedCustomWorld();
         AtomicBoolean scheduled = new AtomicBoolean(false);
         Map<Runnable, CompletableFuture<Void>> sync = new ConcurrentHashMap<>();
-        AtomicInteger integer = new AtomicInteger();
         long ms = System.currentTimeMillis();
         ForkJoinPool pool = new ForkJoinPool();
         ReentrantLock lock = new ReentrantLock();
 
-        boolean isPrimaryThread =  Bukkit.isPrimaryThread();
+        boolean isPrimaryThread = Bukkit.isPrimaryThread();
 
         for (CustomWorldAsyncChunk<?> chunk : asyncWorld.getChunkMap().getCachedCopy()) {
             pool.submit(() -> {
