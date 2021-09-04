@@ -439,6 +439,8 @@ public class SpigotCustomWorld extends CustomWorld {
 
         boolean isPrimaryThread = Bukkit.isPrimaryThread();
 
+        Map<Long, CustomWorldChunkSnap> copiedSnaps = new HashMap<>(this.currentChunkSnapMap);
+
         for (CustomWorldAsyncChunk<?> chunk : asyncWorld.getChunkMap().getCachedCopy()) {
             pool.submit(() -> {
                 CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
@@ -473,8 +475,12 @@ public class SpigotCustomWorld extends CustomWorld {
         System.out.println("Saved " + save.getChunks().size() + " chunks in " + ms + "ms");
 
         //Add all of the chunks that have not been loaded yet (if preloading = false)
-        if (!preloaded.get())
-            save.getChunks().addAll(this.currentChunkSnapMap.values());
+        if (!preloaded.get()) {
+            for (CustomWorldChunkSnap chunk : save.getChunks()) {
+                copiedSnaps.remove(((long) chunk.getX() << 32) | ((long) chunk.getZ()));
+            }
+            save.getChunks().addAll(copiedSnaps.values());
+        }
 
         return save;
     }
