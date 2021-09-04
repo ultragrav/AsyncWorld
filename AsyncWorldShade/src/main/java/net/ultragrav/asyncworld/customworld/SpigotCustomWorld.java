@@ -410,6 +410,10 @@ public class SpigotCustomWorld extends CustomWorld {
         return this.asyncWorld;
     }
 
+    public CustomWorldHandler getWorldHandler() {
+         return this.worldHandler;
+    }
+
     /**
      * Saves the world.
      *
