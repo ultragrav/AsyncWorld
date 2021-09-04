@@ -344,7 +344,7 @@ public class SpigotCustomWorld extends CustomWorld {
 
     @Override
     public boolean isWorldCreated() {
-        return this.worldHandler.isWorldCreated();
+        return this.worldHandler != null && this.worldHandler.isWorldCreated();
     }
 
     @Override
