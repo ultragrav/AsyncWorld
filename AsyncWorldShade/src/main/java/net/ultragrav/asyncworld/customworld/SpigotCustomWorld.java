@@ -347,6 +347,14 @@ public class SpigotCustomWorld extends CustomWorld {
         return this.worldHandler != null && this.worldHandler.isWorldCreated();
     }
 
+    public boolean chunkSnapExists(int cx, int cz) {
+        return getSnap(cx, cz) != null;
+    }
+
+    public CustomWorldChunkSnap getSnap(int cx, int cz) {
+        return currentChunkSnapMap.get(((long) cx << 32) | ((long) cz));
+    }
+
     @Override
     public CustomWorldAsyncChunk<?> getChunk(int cx, int cz) {
         if (asyncWorld.getChunkMap().get(cx, cz) == null) {
