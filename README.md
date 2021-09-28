@@ -1,5 +1,20 @@
 # AsyncWorld
 An asynchronous world modification and in-memory world creation utility for Minecraft
+## Installation
+### Maven:
+```xml
+<repository>
+    <id>UltraGrav</id>
+    <url>https://mvn.ultragrav.net</url>
+</repository>
+
+<dependency>
+    <groupId>net.ultragrav</groupId>
+    <artifactId>AsyncWorldShade</artifactId>
+    <version>1.0.3</version>
+</dependency>
+```
+
 ## Usage
 ### Running as an API (Requires installing the AsyncWorld plugin)
 
