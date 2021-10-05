@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class SpigotCustomWorld extends CustomWorld {
 
@@ -419,7 +420,7 @@ public class SpigotCustomWorld extends CustomWorld {
     }
 
     public CustomWorldHandler getWorldHandler() {
-         return this.worldHandler;
+        return this.worldHandler;
     }
 
     /**
@@ -431,8 +432,12 @@ public class SpigotCustomWorld extends CustomWorld {
      */
     private SavedCustomWorld save(SpigotCustomWorldAsyncWorld asyncWorld, boolean asyncIsSafe) {
         SavedCustomWorld save = new SavedCustomWorld();
+
+        //Synchronous scheduling.
         AtomicBoolean scheduled = new AtomicBoolean(false);
-        Map<Runnable, CompletableFuture<Void>> sync = new ConcurrentHashMap<>();
+        Map<Runnable, CompletableFuture<Void>> sync = new HashMap<>();
+        ReentrantLock scheduleLock = new ReentrantLock();
+
         long ms = System.currentTimeMillis();
         ForkJoinPool pool = new ForkJoinPool();
         ReentrantLock lock = new ReentrantLock();
@@ -441,44 +446,66 @@ public class SpigotCustomWorld extends CustomWorld {
 
         Map<Long, CustomWorldChunkSnap> copiedSnaps = new HashMap<>(this.currentChunkSnapMap);
 
+        Function<Runnable, CompletableFuture<Void>> syncExecutorAsync = (run) -> {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            scheduleLock.lock();
+            try {
+                sync.put(run, future);
+                if (scheduled.compareAndSet(false, true)) {
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            scheduled.set(false);
+                            //Make a copy of the schedule.
+                            scheduleLock.lock();
+                            Map<Runnable, CompletableFuture<Void>> copy = new HashMap<>(sync);
+                            sync.clear();
+                            scheduleLock.unlock();
+
+                            //Run actions.
+                            copy.forEach((action, future) -> {
+                                try {
+                                    action.run();
+                                    future.complete(null);
+                                } catch (Throwable t) {
+                                    future.completeExceptionally(t);
+                                }
+                            });
+                        }
+                    }.runTask(plugin);
+                }
+            } finally {
+                scheduleLock.unlock();
+            }
+            return future;
+        };
+
         for (CustomWorldAsyncChunk<?> chunk : asyncWorld.getChunkMap().getCachedCopy()) {
             pool.submit(() -> {
                 CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
                         asyncIsSafe || isPrimaryThread ? (run) -> {
                             run.run();
                             return CompletableFuture.completedFuture(null);
-                        } : (run) -> {
-                            CompletableFuture<Void> future = new CompletableFuture<>();
-                            sync.put(run, future);
-                            if (scheduled.compareAndSet(false, true)) {
-                                new BukkitRunnable() {
-                                    @Override
-                                    public void run() {
-                                        scheduled.set(false);
-                                        sync.forEach((r, f) -> {
-                                            r.run();
-                                            f.complete(null);
-                                        });
-                                    }
-                                }.runTask(plugin);
-                            }
-                            return future;
-                        });
+                        } : syncExecutorAsync);
+
                 lock.lock();
                 save.getChunks().add(snap);
                 lock.unlock();
             });
         }
-        while (!pool.awaitQuiescence(1, TimeUnit.SECONDS))
-            pool.shutdown();
+        while (!pool.awaitQuiescence(1, TimeUnit.SECONDS)) ;
+        pool.shutdown();
         ms = System.currentTimeMillis() - ms;
         System.out.println("Saved " + save.getChunks().size() + " chunks in " + ms + "ms");
 
         //Add all of the chunks that have not been loaded yet (if preloading = false)
         if (!preloaded.get()) {
+            //Remove chunks that are already in the save.
             for (CustomWorldChunkSnap chunk : save.getChunks()) {
                 copiedSnaps.remove(((long) chunk.getX() << 32) | ((long) chunk.getZ()));
             }
+
+            //Add.
             save.getChunks().addAll(copiedSnaps.values());
         }
 
