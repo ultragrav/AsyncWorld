@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class CustomWorldHandler1_12 implements CustomWorldHandler {
@@ -31,6 +32,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
     private CustomWorldServer1_12 world = null;
 
     private static final ReentrantLock safetyLock = new ReentrantLock(true);
+    private static final AtomicInteger dimensionNum = new AtomicInteger(-1);
 
     @Override
     public void finishChunk(CustomWorldAsyncChunk<?> chunk) {
@@ -80,19 +82,9 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             if(mcServer.server.getWorld(name) != null)
                 throw new IllegalStateException("Tried to create world that already exists. Name: " + name);
 
-            dimension = CraftWorld.CUSTOM_DIMENSION_OFFSET + Bukkit.getServer().getWorlds().size();
-            boolean used = true;
+            //Get dimension number.
+            dimension = getDimension();
 
-            while (used) {
-                for (World server : Bukkit.getServer().getWorlds()) { //Using bukkit getWorlds because that uses a concurrent map (was set to it earlier ^) and is *hopefully* safe
-                    used = ((CraftWorld) server).getHandle().dimension == dimension;
-
-                    if (used) {
-                        dimension++;
-                        break;
-                    }
-                }
-            }
             safetyLock.unlock();
             long ms = System.currentTimeMillis();
             world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
@@ -110,6 +102,34 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
     }
 
     private final ReentrantLock addLock = new ReentrantLock(true);
+
+    private static int getDimension() {
+        safetyLock.lock();
+        try {
+            dimensionNum.compareAndSet(-1, CraftWorld.CUSTOM_DIMENSION_OFFSET + Bukkit.getServer().getWorlds().size() + 16);
+
+            int dimension = dimensionNum.get();
+            boolean used = true;
+            while (used) {
+                for (World server : Bukkit.getServer().getWorlds()) {
+                    used = ((CraftWorld) server).getHandle().dimension == dimension;
+
+                    if (used) {
+                        dimension++;
+                        break;
+                    }
+                }
+            }
+            dimensionNum.set(dimension+1);
+            if (dimensionNum.get() > 4096) {
+                //Reset.
+                dimensionNum.set(-1);
+            }
+            return dimension;
+        } finally {
+            safetyLock.unlock();
+        }
+    }
 
     @Override
     public void addToWorldList() {

@@ -167,8 +167,6 @@ public class SpigotCustomWorld extends CustomWorld {
         queueSkyRelight(chunks); //Relight chunks
 
         loaded.set(true);
-
-        System.out.println("Finished, times: " + createWorldMs + " " + loadChunkMs + " " + generateMs + " " + finishChunksMs + " " + addWorldListMs);
     }
 
     private String getMask(short s) {
@@ -198,6 +196,7 @@ public class SpigotCustomWorld extends CustomWorld {
         //Create world server
         if (worldHandler == null)
             createWorldHandler();
+
         if (!worldHandler.isWorldCreated())
             worldHandler.createWorld(this, name);
 
@@ -256,7 +255,7 @@ public class SpigotCustomWorld extends CustomWorld {
                     c.fromSnap(snap);
                 worldHandler.finishChunk(c);
             })); //Submit tasks
-            while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
+            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS)); //Wait for tasks to complete
             pool.shutdown();
 
         }
@@ -363,7 +362,7 @@ public class SpigotCustomWorld extends CustomWorld {
                 return null;
 
             //Load it
-            CustomWorldChunkSnap snap = currentChunkSnapMap.remove(((long) cx << 32) | ((long) cz));
+            CustomWorldChunkSnap snap = currentChunkSnapMap.get(((long) cx << 32) | ((long) cz));
 
             //Doesn't exist
             if (snap == null)
@@ -372,6 +371,7 @@ public class SpigotCustomWorld extends CustomWorld {
             CustomWorldAsyncChunk<?> chunk = asyncWorld.getChunk(cx, cz);
             chunk.fromSnap(snap);
             this.worldHandler.finishChunk(chunk);
+            currentChunkSnapMap.remove(((long) cx << 32) | ((long) cz));
             return chunk;
         }
         CustomWorldAsyncChunk<?> asyncChunk = asyncWorld.getChunk(cx, cz);
@@ -400,7 +400,6 @@ public class SpigotCustomWorld extends CustomWorld {
                 Bukkit.unloadWorld(this.getBukkitWorld(), false);
             }
             this.worldHandler.invalidateWorld(); //Remove world from reference
-            this.currentChunkSnapMap.clear();
         }
     }
 

@@ -1,9 +1,6 @@
 package net.ultragrav.asyncworld.customworld;
 
-import net.minecraft.server.v1_12_R1.Chunk;
-import net.minecraft.server.v1_12_R1.ChunkRegionLoader;
-import net.minecraft.server.v1_12_R1.IChunkLoader;
-import net.minecraft.server.v1_12_R1.World;
+import net.minecraft.server.v1_12_R1.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +27,18 @@ public class CustomWorldChunkLoader1_12 implements IChunkLoader {
 
         if(x != chunk.locX || z != chunk.locZ)
             throw new IllegalStateException("Chunk loaded was not of required location: " + x + " " + z + ", it was " + chunk.locX + " " + chunk.locZ);
+
+        for (List<Entity> entitySlice : chunk.getEntitySlices()) {
+            if (entitySlice == null) continue;
+            //Remove all player entities. This will... never happen except for when using NPCs.
+            for (int i = 0; i < entitySlice.size(); i++) {
+                Entity e = entitySlice.get(i);
+                if (e instanceof EntityPlayer) {
+                    entitySlice.remove(i);
+                    i--;
+                }
+            }
+        }
 
         return chunk;
     }

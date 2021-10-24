@@ -4,10 +4,7 @@ import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
-import net.ultragrav.nbt.wrapper.Tag;
-import net.ultragrav.nbt.wrapper.TagCompound;
-import net.ultragrav.nbt.wrapper.TagInt;
-import net.ultragrav.nbt.wrapper.TagList;
+import net.ultragrav.nbt.wrapper.*;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
 
@@ -164,6 +161,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         chunk.g(true); //Literally have no idea what this does - something to do with saving
 
         if (entity != null) {
+
             chunk.a(entity);
 
             Map<String, Tag> map = tag.getData();
