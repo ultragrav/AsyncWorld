@@ -164,12 +164,12 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
             chunk.a(entity);
 
-            Map<String, Tag> map = tag.getData();
+            Map<String, Tag<?>> map = tag.getData();
 
             if (map.containsKey("Passengers")) {
-                List<Tag> passengersList = ((TagList) map.get("Passengers")).getData();
+                List<Tag<?>> passengersList = ((TagList) map.get("Passengers")).getData();
 
-                for (Tag passengerTag : passengersList) {
+                for (Tag<?> passengerTag : passengersList) {
                     Entity passenger = loadEntity((TagCompound) passengerTag, world, chunk);
 
                     if (passengerTag != null) {
