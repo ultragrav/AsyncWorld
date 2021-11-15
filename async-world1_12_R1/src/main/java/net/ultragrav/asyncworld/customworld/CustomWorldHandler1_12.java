@@ -90,14 +90,15 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
             ms = System.currentTimeMillis() - ms;
             safetyLock.lock();
-            ms = System.currentTimeMillis();
             world.b();
             ms = System.currentTimeMillis() - ms;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         } finally {
-            safetyLock.unlock();
+            if (safetyLock.isHeldByCurrentThread()) {
+                safetyLock.unlock();
+            }
         }
     }
 

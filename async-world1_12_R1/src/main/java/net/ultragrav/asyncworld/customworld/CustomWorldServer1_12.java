@@ -4,7 +4,12 @@ import net.minecraft.server.v1_12_R1.*;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 public class CustomWorldServer1_12 extends WorldServer {
+
+    private static final ReentrantLock lock = new ReentrantLock();
+
     CustomWorldServer1_12(@NotNull CustomWorldDataManager1_12 dataManager, int dimension) {
         super(
                 MinecraftServer.getServer(),
@@ -16,8 +21,13 @@ public class CustomWorldServer1_12 extends WorldServer {
                 new CustomWorldChunkGenerator1_12()
         );
         this.keepSpawnInMemory = false;
-        this.C = new AdvancementDataWorld(null);//TODO maybe remove if causes crashes.
-        this.D = new CustomFunctionData(null, MinecraftServer.getServer());
+        lock.lock();
+        try {
+            this.C = new AdvancementDataWorld(null);//TODO maybe remove if causes crashes.
+            this.D = new CustomFunctionData(null, MinecraftServer.getServer());
+        } finally {
+            lock.unlock();
+        }
         this.tracker = new EntityTracker(this);
         addIWorldAccess(new WorldManager(MinecraftServer.getServer(), this));
 
