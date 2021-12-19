@@ -174,10 +174,14 @@ public class SpigotAsyncWorld extends AsyncWorld {
             }
 
         if (threads != 1) {
-            while (true) {
-                if (pool.awaitQuiescence(1, TimeUnit.SECONDS)) break;
-            }
             pool.shutdown();
+            while (true) {
+                try {
+                    if (pool.awaitTermination(1, TimeUnit.SECONDS)) break;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         IntVector3D finalPosition = position;
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
@@ -550,9 +554,15 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     pool.submit(runnable);
                 }
             }
-            while (!pool.isQuiescent())
-                pool.awaitQuiescence(1, TimeUnit.SECONDS);
             pool.shutdown();
+            // Await shutdown.
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -615,9 +625,14 @@ public class SpigotAsyncWorld extends AsyncWorld {
                 }
                 return null;
             }));
-            while (!pool.isQuiescent())
-                pool.awaitQuiescence(1, TimeUnit.SECONDS);
             pool.shutdown();
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         } else {
 
             if (chunkPreprocessor != null)
@@ -679,9 +694,14 @@ public class SpigotAsyncWorld extends AsyncWorld {
                     pool.submit(runnable);
                 }
             }
-            while (!pool.isQuiescent())
-                pool.awaitQuiescence(1, TimeUnit.SECONDS);
             pool.shutdown();
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

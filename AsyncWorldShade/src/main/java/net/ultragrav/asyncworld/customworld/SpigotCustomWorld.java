@@ -142,8 +142,16 @@ public class SpigotCustomWorld extends CustomWorld {
         })); //Submit tasks
 
         long finishChunksMs = System.currentTimeMillis();
-        while (!pool.isQuiescent()) pool.awaitQuiescence(1, TimeUnit.SECONDS); //Wait for tasks to complete
+
         pool.shutdown();
+        while (!pool.isTerminated()) {
+            try {
+                pool.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         finishChunksMs = System.currentTimeMillis() - finishChunksMs;
 
 
@@ -255,8 +263,15 @@ public class SpigotCustomWorld extends CustomWorld {
                     c.fromSnap(snap);
                 worldHandler.finishChunk(c);
             })); //Submit tasks
-            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS)); //Wait for tasks to complete
+
             pool.shutdown();
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
 
         }
 
@@ -481,21 +496,31 @@ public class SpigotCustomWorld extends CustomWorld {
 
         for (CustomWorldAsyncChunk<?> chunk : asyncWorld.getChunkMap().getCachedCopy()) {
             pool.submit(() -> {
-                CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
-                        asyncIsSafe || isPrimaryThread ? (run) -> {
-                            run.run();
-                            return CompletableFuture.completedFuture(null);
-                        } : syncExecutorAsync);
+                try {
+                    CustomWorldChunkSnap snap = CustomWorldChunkSnap.fromAsyncChunk(chunk,
+                            asyncIsSafe || isPrimaryThread ? (run) -> {
+                                run.run();
+                                return CompletableFuture.completedFuture(null);
+                            } : syncExecutorAsync);
 
-                lock.lock();
-                save.getChunks().add(snap);
-                lock.unlock();
+                    lock.lock();
+                    save.getChunks().add(snap);
+                    lock.unlock();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
             });
         }
-        while (!pool.awaitQuiescence(1, TimeUnit.SECONDS)) ;
         pool.shutdown();
+        while (true) {
+            try {
+                if (pool.awaitTermination(1, TimeUnit.SECONDS)) break;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            //Wait for the pool to finish.
+        }
         ms = System.currentTimeMillis() - ms;
-        System.out.println("Saved " + save.getChunks().size() + " chunks in " + ms + "ms");
 
         //Add all of the chunks that have not been loaded yet (if preloading = false)
         if (!preloaded.get()) {

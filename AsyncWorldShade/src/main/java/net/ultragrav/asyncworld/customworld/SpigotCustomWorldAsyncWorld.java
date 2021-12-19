@@ -157,8 +157,14 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
         schematic.getTiles().forEach((p, t) -> setTile(p.getX() + finalPosition.getX(), p.getY() + finalPosition.getY(), p.getZ() + finalPosition.getZ(), t));
 
         if (threads != 1) {
-            while (!pool.awaitQuiescence(1, TimeUnit.SECONDS)) ;
             pool.shutdown();
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -364,9 +370,14 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
                     pool.submit(runnable);
                 }
             }
-            while (!pool.isQuiescent())
-                pool.awaitQuiescence(1, TimeUnit.SECONDS);
             pool.shutdown();
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
