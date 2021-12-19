@@ -4,6 +4,7 @@ import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -13,7 +14,7 @@ public class SavedCustomWorld implements GravSerializable {
 
     private GravSerializer extra = new GravSerializer();
 
-    private final List<CustomWorldChunkSnap> chunks = new ArrayList<>();
+    private final List<CustomWorldChunkSnap> chunks = Collections.synchronizedList(new ArrayList<>());
 
     public SavedCustomWorld() {
     }
@@ -45,7 +46,7 @@ public class SavedCustomWorld implements GravSerializable {
     }
 
     @Override
-    public void serialize(GravSerializer serializer) {
+    public synchronized void serialize(GravSerializer serializer) {
 
         //Version
         serializer.writeInt(VERSION);

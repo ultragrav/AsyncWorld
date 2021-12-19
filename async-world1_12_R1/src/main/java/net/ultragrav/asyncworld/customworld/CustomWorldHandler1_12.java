@@ -85,11 +85,11 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             //Get dimension number.
             dimension = getDimension();
 
-            safetyLock.unlock();
+//            safetyLock.unlock();
             long ms = System.currentTimeMillis();
             world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
             ms = System.currentTimeMillis() - ms;
-            safetyLock.lock();
+//            safetyLock.lock();
             world.b();
             ms = System.currentTimeMillis() - ms;
         } catch (Exception e) {
