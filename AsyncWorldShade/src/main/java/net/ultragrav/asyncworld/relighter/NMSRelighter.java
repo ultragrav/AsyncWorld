@@ -2,10 +2,8 @@ package net.ultragrav.asyncworld.relighter;
 
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.AsyncWorld;
-import net.ultragrav.asyncworld.QueuedChunk;
-import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
+import net.ultragrav.asyncworld.scheduler.SyncScheduler;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,9 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 public class NMSRelighter implements Relighter {
 
@@ -199,12 +195,9 @@ public class NMSRelighter implements Relighter {
                 }
             }
         }
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                chunks.forEach(c -> c.chunk.sendPackets(0xFFFF)); //Send chunks
-            }
-        }.runTask(this.plugin);
+        SyncScheduler.sync(() -> {
+            chunks.forEach(c -> c.chunk.sendPackets(0xFFFF)); //Send chunks
+        }, this.plugin);
     }
 
     private int getOpacity(AsyncChunk chunk, int x, int y, int z) {

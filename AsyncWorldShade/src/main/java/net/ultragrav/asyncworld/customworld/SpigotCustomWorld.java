@@ -5,10 +5,10 @@ import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.SpigotAsyncWorld;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
+import net.ultragrav.asyncworld.scheduler.SyncScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -159,13 +159,10 @@ public class SpigotCustomWorld extends CustomWorld {
         long addWorldListMs = System.currentTimeMillis();
         if (!Bukkit.isPrimaryThread()) {
             CompletableFuture<Void> future = new CompletableFuture<>();
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    worldHandler.addToWorldList();
-                    future.complete(null);
-                }
-            }.runTask(plugin);
+            SyncScheduler.sync(() -> {
+                worldHandler.addToWorldList();
+                future.complete(null);
+            }, plugin);
             future.join();
         } else {
             worldHandler.addToWorldList();
@@ -220,20 +217,10 @@ public class SpigotCustomWorld extends CustomWorld {
                     worldHandler.addToWorldList();
                     addFuture.complete(null);
                 } else {
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            r.get().run();
-                        }
-                    }.runTask(plugin);
+                    SyncScheduler.sync(r.get(), plugin);
                 }
             });
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    r.get().run();
-                }
-            }.runTask(plugin);
+            SyncScheduler.sync(r.get(), plugin);
         }
 
         ms = System.currentTimeMillis();
@@ -462,35 +449,44 @@ public class SpigotCustomWorld extends CustomWorld {
 
         Function<Runnable, CompletableFuture<Void>> syncExecutorAsync = (run) -> {
             CompletableFuture<Void> future = new CompletableFuture<>();
-            scheduleLock.lock();
-            try {
-                sync.put(run, future);
-                if (scheduled.compareAndSet(false, true)) {
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            scheduled.set(false);
-                            //Make a copy of the schedule.
-                            scheduleLock.lock();
-                            Map<Runnable, CompletableFuture<Void>> copy = new HashMap<>(sync);
-                            sync.clear();
-                            scheduleLock.unlock();
+//            scheduleLock.lock();
+//            try {
+//                sync.put(run, future);
+//                if (scheduled.compareAndSet(false, true)) {
+//                    new BukkitRunnable() {
+//                        @Override
+//                        public void run() {
+//                            scheduled.set(false);
+//                            //Make a copy of the schedule.
+//                            scheduleLock.lock();
+//                            Map<Runnable, CompletableFuture<Void>> copy = new HashMap<>(sync);
+//                            sync.clear();
+//                            scheduleLock.unlock();
+//
+//                            //Run actions.
+//                            copy.forEach((action, future) -> {
+//                                try {
+//                                    action.run();
+//                                    future.complete(null);
+//                                } catch (Throwable t) {
+//                                    future.completeExceptionally(t);
+//                                }
+//                            });
+//                        }
+//                    }.runTask(plugin);
+//                }
+//            } finally {
+//                scheduleLock.unlock();
+//            }
 
-                            //Run actions.
-                            copy.forEach((action, future) -> {
-                                try {
-                                    action.run();
-                                    future.complete(null);
-                                } catch (Throwable t) {
-                                    future.completeExceptionally(t);
-                                }
-                            });
-                        }
-                    }.runTask(plugin);
+            SyncScheduler.sync(() -> {
+                try {
+                    run.run();
+                    future.complete(null);
+                } catch (Throwable t) {
+                    future.completeExceptionally(t);
                 }
-            } finally {
-                scheduleLock.unlock();
-            }
+            }, plugin);
             return future;
         };
 

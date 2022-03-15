@@ -1,6 +1,7 @@
 package net.ultragrav.asyncworld.customworld;
 
 import net.minecraft.server.v1_12_R1.MinecraftServer;
+import net.ultragrav.asyncworld.scheduler.SyncScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -72,7 +73,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
                 if(Bukkit.isPrimaryThread())
                     runnable.run();
                 else
-                    runnable.runTask(customWorld.getPlugin());
+                    SyncScheduler.sync(runnable, customWorld.getPlugin());
                 future.get();
             }
             craftBukkitWorldMap.setAccessible(false);

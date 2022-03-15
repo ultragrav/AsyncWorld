@@ -3,6 +3,7 @@ package net.ultragrav.asyncworld.customworld;
 import lombok.Getter;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.ChunkLocation;
+import net.ultragrav.asyncworld.scheduler.SyncScheduler;
 import net.ultragrav.asyncworld.schematics.Schematic;
 import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
@@ -11,7 +12,6 @@ import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -421,13 +421,10 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
         }
         if (!syncLoad.isEmpty()) {
             CompletableFuture<Void> future = new CompletableFuture<>();
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ()));
-                    future.complete(null);
-                }
-            }.runTask(this.plugin);
+            SyncScheduler.sync(() -> {
+                syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ()));
+                future.complete(null);
+            }, this.plugin);
             future.join();
         }
     }

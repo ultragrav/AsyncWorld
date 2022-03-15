@@ -6,6 +6,7 @@ import net.ultragrav.asyncworld.chunk.AsyncChunk1_15_R1;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_8_R3;
 import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import net.ultragrav.asyncworld.relighter.Relighter;
+import net.ultragrav.asyncworld.scheduler.SyncScheduler;
 import net.ultragrav.asyncworld.schematics.Schematic;
 import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
@@ -13,7 +14,6 @@ import net.ultragrav.utils.IntVector3D;
 import net.ultragrav.utils.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -263,12 +263,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
         if (isSync) {
             refresh.run();
         } else {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    refresh.run();
-                }
-            }.runTask(chunkQueue.getPlugin());
+            SyncScheduler.sync(refresh, chunkQueue.getPlugin());
         }
         f.join();
 
@@ -446,13 +441,10 @@ public class SpigotAsyncWorld extends AsyncWorld {
         }
         if (!syncLoad.isEmpty()) {
             CompletableFuture<Void> future = new CompletableFuture<>();
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ(), true));
-                    future.complete(null);
-                }
-            }.runTask(chunkQueue.getPlugin());
+            SyncScheduler.sync(() -> {
+                syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ(), true));
+                future.complete(null);
+            }, chunkQueue.getPlugin());
             future.join();
         }
     }
