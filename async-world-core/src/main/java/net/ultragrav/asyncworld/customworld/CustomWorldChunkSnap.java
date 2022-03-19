@@ -205,12 +205,12 @@ public class CustomWorldChunkSnap implements GravSerializable {
                 }
             };
 
-            CompletableFuture<Void> f = new CompletableFuture<>();
+            CompletableFuture<Void> syncFuture = new CompletableFuture<>();
             if (Bukkit.isPrimaryThread()) {
                 runnable.run();
-                f.complete(null);
+                syncFuture.complete(null);
             } else {
-                f = syncExecutor.apply(runnable);
+                syncFuture = syncExecutor.apply(runnable);
             }
 
             //Possibly async
@@ -225,7 +225,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
                 skyLight[i] = chunk.syncGetSkyLight(i);
             }
 
-            f.join();
+            syncFuture.join();
             CustomWorldChunkSnap snap = new CustomWorldChunkSnap(heightMap, emittedLight, skyLight, blocks, blockData, biomes, entities.get(), tiles.get(), sectionBitMask);
             snap.setX(chunk.getLoc().getX());
             snap.setZ(chunk.getLoc().getZ());

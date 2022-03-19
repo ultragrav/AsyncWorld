@@ -449,36 +449,6 @@ public class SpigotCustomWorld extends CustomWorld {
 
         Function<Runnable, CompletableFuture<Void>> syncExecutorAsync = (run) -> {
             CompletableFuture<Void> future = new CompletableFuture<>();
-//            scheduleLock.lock();
-//            try {
-//                sync.put(run, future);
-//                if (scheduled.compareAndSet(false, true)) {
-//                    new BukkitRunnable() {
-//                        @Override
-//                        public void run() {
-//                            scheduled.set(false);
-//                            //Make a copy of the schedule.
-//                            scheduleLock.lock();
-//                            Map<Runnable, CompletableFuture<Void>> copy = new HashMap<>(sync);
-//                            sync.clear();
-//                            scheduleLock.unlock();
-//
-//                            //Run actions.
-//                            copy.forEach((action, future) -> {
-//                                try {
-//                                    action.run();
-//                                    future.complete(null);
-//                                } catch (Throwable t) {
-//                                    future.completeExceptionally(t);
-//                                }
-//                            });
-//                        }
-//                    }.runTask(plugin);
-//                }
-//            } finally {
-//                scheduleLock.unlock();
-//            }
-
             SyncScheduler.sync(() -> {
                 try {
                     run.run();
@@ -510,7 +480,7 @@ public class SpigotCustomWorld extends CustomWorld {
         pool.shutdown();
         while (true) {
             try {
-                if (pool.awaitTermination(1, TimeUnit.SECONDS)) break;
+                if (pool.awaitTermination(1, TimeUnit.SECONDS)) break; // MARK
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

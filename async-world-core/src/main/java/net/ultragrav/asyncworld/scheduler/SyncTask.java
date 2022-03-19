@@ -1,8 +1,10 @@
 package net.ultragrav.asyncworld.scheduler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class SyncTask {
     private final Runnable runnable;
-    private volatile boolean completed = false;
+    private AtomicBoolean completed = new AtomicBoolean(false);
 
     public SyncTask(Runnable runnable) {
         this.runnable = runnable;
@@ -13,10 +15,10 @@ public class SyncTask {
     }
 
     public boolean isCompleted() {
-        return completed;
+        return completed.get();
     }
 
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
+    public boolean tryComplete() {
+        return completed.compareAndSet(false, true);
     }
 }
