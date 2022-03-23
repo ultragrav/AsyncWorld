@@ -210,17 +210,14 @@ public class SpigotCustomWorld extends CustomWorld {
 
 
         //I realize now this is a very overly complicated way of adding to world list, but I'm too lazy to change it
+        AtomicBoolean worldAdded = new AtomicBoolean(false);
         if (!Bukkit.isPrimaryThread()) {
-            AtomicReference<Runnable> r = new AtomicReference<>();
-            r.set(() -> {
-                if (finishedGeneration.get()) {
+            SyncScheduler.sync(() -> {
+                if (finishedGeneration.get() && worldAdded.compareAndSet(false, true)) {
                     worldHandler.addToWorldList();
                     addFuture.complete(null);
-                } else {
-                    SyncScheduler.sync(r.get(), plugin);
                 }
-            });
-            SyncScheduler.sync(r.get(), plugin);
+            }, plugin);
         }
 
         ms = System.currentTimeMillis();
@@ -270,6 +267,12 @@ public class SpigotCustomWorld extends CustomWorld {
         if (Bukkit.isPrimaryThread()) {
             worldHandler.addToWorldList();
         } else {
+            SyncScheduler.sync(() -> {
+                if (worldAdded.compareAndSet(false, true)) {
+                    worldHandler.addToWorldList();
+                    addFuture.complete(null);
+                }
+            }, plugin);
             addFuture.join();
         }
 
