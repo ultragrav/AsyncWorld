@@ -2,7 +2,6 @@ package net.ultragrav.asyncworld.customworld;
 
 import net.minecraft.server.v1_12_R1.*;
 import org.bukkit.World;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -10,7 +9,7 @@ public class CustomWorldServer1_12 extends WorldServer {
 
     private static final ReentrantLock lock = new ReentrantLock();
 
-    CustomWorldServer1_12(@NotNull CustomWorldDataManager1_12 dataManager, int dimension) {
+    CustomWorldServer1_12(CustomWorldDataManager1_12 dataManager, int dimension) {
         super(
                 MinecraftServer.getServer(),
                 dataManager,

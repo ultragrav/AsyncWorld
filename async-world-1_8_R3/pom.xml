@@ -3,24 +3,24 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <groupId>net.ultragrav</groupId>
-        <artifactId>AsyncWorld</artifactId>
-        <version>1.0.3</version>
+        <groupId>net.ultragrav.async-world</groupId>
+        <artifactId>async-world-parent</artifactId>
+        <version>1.1.0</version>
     </parent>
-    <artifactId>async-world1_15_R1</artifactId>
+    <artifactId>async-world-1_8_R3</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>net.ultragrav</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>async-world-core</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot</artifactId>
-            <version>1.15.2-R0.1-SNAPSHOT</version>
+            <version>1.8.8-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

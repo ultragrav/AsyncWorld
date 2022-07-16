@@ -3,7 +3,6 @@ package net.ultragrav.asyncworld.customworld;
 import lombok.AccessLevel;
 import lombok.Getter;
 import net.minecraft.server.v1_12_R1.*;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.UUID;
@@ -33,7 +32,6 @@ public class CustomWorldDataManager1_12 extends WorldNBTStorage {
         this.chunkLoader = new CustomWorldChunkLoader1_12(world);
     }
 
-    @NotNull
     @Override
     public WorldData getWorldData() {
         if (worldData == null) {

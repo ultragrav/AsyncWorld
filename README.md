@@ -9,9 +9,9 @@ An asynchronous world modification and in-memory world creation utility for Mine
 </repository>
 
 <dependency>
-    <groupId>net.ultragrav</groupId>
-    <artifactId>AsyncWorldShade</artifactId>
-    <version>1.0.3</version>
+    <groupId>net.ultragrav.async-world</groupId>
+    <artifactId>async-world</artifactId>
+    <version>1.1.0</version>
 </dependency>
 ```
 
