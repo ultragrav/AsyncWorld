@@ -42,7 +42,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void createWorld(CustomWorld customWorld, String name) {
+    public void createWorld(CustomWorld customWorld, String name, World.Environment environment) {
         CustomWorldDataManager1_12 dataManager = new CustomWorldDataManager1_12(customWorld);
 
         //This lock is to prevent two threads from editing the craftBukkitWorldMap at the same time
@@ -88,7 +88,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
 
 //            safetyLock.unlock();
             long ms = System.currentTimeMillis();
-            world = new CustomWorldServer1_12(dataManager, dimension); //Instantiating world calls bukkitServer.addWorld(this)
+            world = new CustomWorldServer1_12(dataManager, dimension, environment); //Instantiating world calls bukkitServer.addWorld(this)
             ms = System.currentTimeMillis() - ms;
 //            safetyLock.lock();
             world.b();

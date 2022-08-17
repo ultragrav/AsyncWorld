@@ -90,13 +90,17 @@ public class SpigotCustomWorld extends CustomWorld {
         this.relighter = new NMSRelighter(this.plugin);
     }
 
+
+    public synchronized void create(Consumer<CustomWorldAsyncWorld> generator) {
+        create(generator, World.Environment.NORMAL);
+    }
+
     /**
      * Create the world
      *
      * @param generator The function that will generate the world's contents
      */
-    @Override
-    public synchronized void create(Consumer<CustomWorldAsyncWorld> generator) {
+    public synchronized void create(Consumer<CustomWorldAsyncWorld> generator, World.Environment environment) {
 
 
         long createWorldMs = -1;
@@ -110,7 +114,7 @@ public class SpigotCustomWorld extends CustomWorld {
         }
         if (!worldHandler.isWorldCreated()) {
             createWorldMs = System.currentTimeMillis();
-            worldHandler.createWorld(this, name);
+            worldHandler.createWorld(this, name, environment);
             createWorldMs = System.currentTimeMillis() - createWorldMs;
         }
 
@@ -182,8 +186,11 @@ public class SpigotCustomWorld extends CustomWorld {
         return builder.toString();
     }
 
-    @Override
     public synchronized void create(SavedCustomWorld world, boolean preloadChunks) {
+        create(world, preloadChunks, World.Environment.NORMAL);
+    }
+
+    public synchronized void create(SavedCustomWorld world, boolean preloadChunks, World.Environment environment) {
         if (!startedCreation.compareAndSet(false, true))
             throw new RuntimeException("World already created!");
 
@@ -203,7 +210,7 @@ public class SpigotCustomWorld extends CustomWorld {
             createWorldHandler();
 
         if (!worldHandler.isWorldCreated())
-            worldHandler.createWorld(this, name);
+            worldHandler.createWorld(this, name, environment);
 
         CompletableFuture<Void> addFuture = new CompletableFuture<>();
         AtomicBoolean finishedGeneration = new AtomicBoolean(false);
@@ -436,11 +443,6 @@ public class SpigotCustomWorld extends CustomWorld {
      */
     private SavedCustomWorld save(SpigotCustomWorldAsyncWorld asyncWorld, boolean asyncIsSafe) {
         SavedCustomWorld save = new SavedCustomWorld();
-
-        //Synchronous scheduling.
-        AtomicBoolean scheduled = new AtomicBoolean(false);
-        Map<Runnable, CompletableFuture<Void>> sync = new HashMap<>();
-        ReentrantLock scheduleLock = new ReentrantLock();
 
         long ms = System.currentTimeMillis();
         ForkJoinPool pool = new ForkJoinPool();

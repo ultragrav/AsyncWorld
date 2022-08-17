@@ -9,14 +9,14 @@ public class CustomWorldServer1_12 extends WorldServer {
 
     private static final ReentrantLock lock = new ReentrantLock();
 
-    CustomWorldServer1_12(CustomWorldDataManager1_12 dataManager, int dimension) {
+    CustomWorldServer1_12(CustomWorldDataManager1_12 dataManager, int dimension, World.Environment environment) {
         super(
                 MinecraftServer.getServer(),
                 dataManager,
                 dataManager.getWorldData(),
                 dimension,
                 MinecraftServer.getServer().methodProfiler,
-                World.Environment.NORMAL,
+                environment,
                 new CustomWorldChunkGenerator1_12()
         );
         this.keepSpawnInMemory = false;
