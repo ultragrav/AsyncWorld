@@ -6,7 +6,7 @@
     <parent>
         <groupId>net.ultragrav.async-world</groupId>
         <artifactId>async-world-parent</artifactId>
-        <version>1.1.0</version>
+        <version>${revision}</version>
     </parent>
     <artifactId>async-world-1_15_R1</artifactId>
 
