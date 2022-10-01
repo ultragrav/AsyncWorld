@@ -59,6 +59,10 @@
     </modules>
 
     <repositories>
+        <repository>
+            <id>ultragrav-spigot</id>
+            <url>https://smvn.ultragrav.net/</url>
+        </repository>
     </repositories>
 
     <dependencies>
