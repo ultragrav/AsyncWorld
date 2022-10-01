@@ -60,6 +60,10 @@
 
     <repositories>
         <repository>
+            <id>ultragrav-repo</id>
+            <url>https://mvn.ultragrav.net/</url>
+        </repository>
+        <repository>
             <id>ultragrav-spigot</id>
             <url>https://smvn.ultragrav.net/</url>
         </repository>
