@@ -19,6 +19,10 @@ An asynchronous world modification and in-memory world creation utility for Mine
 ### Running as an API (Requires installing the AsyncWorld plugin)
 
 ### Running as a library
+In your onEnable, initialize the chunk queue as follows
+```java
+new GlobalChunkQueue(this);
+```
 
 ### Set blocks in a region
 ```java
