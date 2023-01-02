@@ -11,7 +11,6 @@ import net.ultragrav.nbt.wrapper.Tag;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_15_R1.CraftChunk;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -163,7 +162,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
             return 0;
         }
         return nmsCachedChunk.getSections()[sectionIndex].().a(x, y & 15, z);*/
-        throw new NotImplementedException();
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -176,7 +175,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
             return 0;
         }
         return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);*/
-        throw new NotImplementedException();
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -202,7 +201,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4);
         }
         nmsCachedChunk.getSections()[sectionIndex].getEmittedLightArray().a(x, y & 15, z, value);*/
-        throw new NotImplementedException();
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -215,7 +214,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4);
         }
         nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);*/
-        throw new NotImplementedException();
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -256,7 +255,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
         int[] arr = new int[chunk.heightMap.length];
         System.arraycopy(chunk.heightMap, 0, arr, 0, arr.length);
         return arr;*/
-        throw new NotImplementedException(); // TODO: Type of heightMap is different in 1.15, may need a wrapper
+        throw new IllegalStateException("Not implemented"); // TODO: Type of heightMap is different in 1.15, may need a wrapper
     }
 
     @Override
@@ -293,7 +292,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getEmittedLightArray().asBytes(), 0, arr, 0, arr.length);
         return arr;*/
-        throw new NotImplementedException();
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -305,7 +304,7 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
         return arr;*/
-        throw new NotImplementedException();
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override

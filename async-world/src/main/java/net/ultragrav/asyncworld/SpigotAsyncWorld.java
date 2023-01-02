@@ -232,7 +232,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
         if (isSync) {
             runnable.run();
         } else {
-            Bukkit.getScheduler().runTask(chunkQueue.getPlugin(), runnable);
+            SyncScheduler.sync(runnable, chunkQueue.getPlugin());
         }
     }
 

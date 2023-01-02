@@ -16,6 +16,7 @@ public abstract class CustomWorld {
     public void create(SavedCustomWorld world) { this.create(world, true); }
     public abstract void create(SavedCustomWorld world, boolean preloadChunks);
     public abstract CustomWorldAsyncChunk<?> getChunk(int cx, int cz);
+    public abstract void unloadAndSaveChunk(int cx, int cz);
 
     public abstract Plugin getPlugin();
     public abstract void unload();

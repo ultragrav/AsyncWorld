@@ -44,6 +44,10 @@ public class SpigotCustomWorldChunkMap {
         return chunk;
     }
 
+    public synchronized CustomWorldAsyncChunk<?> remove(int cx, int cz) {
+        return chunks.remove(getChunkLocAsLong(cx, cz));
+    }
+
 //    public synchronized void add(AsyncChunk chunk) {
 //        if (!this.contains(chunk.getLoc().getX(), chunk.getLoc().getZ())) {
 //            this.chunks.put(getChunkLocAsLong(chunk.getLoc().getX(), chunk.getLoc().getZ()), chunk);

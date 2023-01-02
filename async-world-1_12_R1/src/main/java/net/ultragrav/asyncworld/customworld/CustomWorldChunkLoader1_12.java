@@ -45,6 +45,7 @@ public class CustomWorldChunkLoader1_12 implements IChunkLoader {
 
     @Override
     public void saveChunk(World world, Chunk chunk, boolean unloaded) {
+        if (unloaded) customWorld.unloadAndSaveChunk(chunk.locX, chunk.locZ);
     }
 
     // Save all chunks
