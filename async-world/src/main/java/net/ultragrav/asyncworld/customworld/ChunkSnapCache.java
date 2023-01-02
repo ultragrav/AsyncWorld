@@ -34,6 +34,10 @@ public class ChunkSnapCache {
         cache.remove(getKey(x, z));
     }
 
+    public boolean contains(int cx, int cz) {
+        return cache.containsKey(getKey(cx, cz));
+    }
+
     public void load(List<CustomWorldChunkSnap> list) {
         for (CustomWorldChunkSnap snap : list) {
             put(snap.getX(), snap.getZ(), snap);

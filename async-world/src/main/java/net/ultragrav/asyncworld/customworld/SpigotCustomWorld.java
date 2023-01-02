@@ -283,6 +283,14 @@ public class SpigotCustomWorld extends CustomWorld {
         loaded.set(true);
     }
 
+    public boolean chunkSnapExists(int cx, int cz) {
+        return chunkSnapCache.contains(cx, cz);
+    }
+
+    public CustomWorldChunkSnap getSnap(int cx, int cz) {
+        return chunkSnapCache.get(cx, cz);
+    }
+
     private void queueSkyRelight(List<CustomWorldAsyncChunk<?>> chunks) {
         Map<AsyncChunk, Integer> masks = new HashMap<>();
         for (AsyncChunk chunk : chunks) {
