@@ -47,8 +47,9 @@ public class ChunkSnapCache {
     public Map<Long, CustomWorldChunkSnap> save() {
         Map<Long, CustomWorldChunkSnap> map = new ConcurrentHashMap<>(cache.size());
         for (Map.Entry<Long, byte[]> entry : cache.entrySet()) {
-            CustomWorldChunkSnap snap = new CustomWorldChunkSnap(new GravSerializer(entry.getValue()), (int) (entry.getKey() >> 32), (int) (entry.getKey() & 0xFFFFFFFFL));
-            map.put(entry.getKey(), snap);
+            int x = (int) (entry.getKey() >> 32);
+            int z = (int) (entry.getKey() & 0xFFFFFFFFL);
+            map.put(entry.getKey(), get(x, z));
         }
         return map;
     }
