@@ -388,6 +388,8 @@ public class SpigotCustomWorld extends CustomWorld {
 
     @Override
     public void unloadAndSaveChunk(int cx, int cz) {
+        if (preloaded.get()) return;
+
         CustomWorldAsyncChunk<?> chunk = asyncWorld.getChunkMap().remove(cx, cz);
         if (chunk != null) {
 
