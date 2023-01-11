@@ -3,6 +3,8 @@ package net.ultragrav.asyncworld.customworld;
 import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncChunk;
+import net.ultragrav.asyncworld.chunk.NextTickEntry;
+import net.ultragrav.nbt.wrapper.Tag;
 import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
@@ -17,7 +19,7 @@ import java.util.function.Function;
 
 public class CustomWorldChunkSnap implements GravSerializable {
 
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     @Getter
     @Setter
@@ -33,9 +35,10 @@ public class CustomWorldChunkSnap implements GravSerializable {
     private final byte[] biomes;
     private final List<TagCompound> entities;
     private final List<TagCompound> tiles;
+    private final List<NextTickEntry> nextTickEntries;
     private final short sectionBitMask;
 
-    public CustomWorldChunkSnap(int[] heightMap, byte[][] emittedLight, byte[][] skyLight, byte[][] blocks, byte[][] blockData, byte[] biomes, List<TagCompound> entities, List<TagCompound> tiles, short sectionBitMask) {
+    public CustomWorldChunkSnap(int[] heightMap, byte[][] emittedLight, byte[][] skyLight, byte[][] blocks, byte[][] blockData, byte[] biomes, List<TagCompound> entities, List<TagCompound> tiles, List<NextTickEntry> nextTickEntries, short sectionBitMask) {
         this.heightMap = heightMap;
         this.emittedLight = emittedLight;
         this.skyLight = skyLight;
@@ -44,24 +47,29 @@ public class CustomWorldChunkSnap implements GravSerializable {
         this.biomes = biomes;
         this.entities = entities;
         this.tiles = tiles;
+        this.nextTickEntries = nextTickEntries;
         this.sectionBitMask = sectionBitMask;
     }
 
     public static byte[][] getBlocksInternal(CustomWorldChunkSnap snap) {
         return snap.blocks;
     }
+
     //Block data.
     public static byte[][] getBlockDataInternal(CustomWorldChunkSnap snap) {
         return snap.blockData;
     }
+
     //Sky light.
     public static byte[][] getSkyLightInternal(CustomWorldChunkSnap snap) {
         return snap.skyLight;
     }
+
     //Emitted light.
     public static byte[][] getEmittedLightInternal(CustomWorldChunkSnap snap) {
         return snap.emittedLight;
     }
+
     //Height map.
     public static int[] getHeightMapInternal(CustomWorldChunkSnap snap) {
         return snap.heightMap;
@@ -119,8 +127,24 @@ public class CustomWorldChunkSnap implements GravSerializable {
         return new ArrayList<>(entities);
     }
 
+    public List<TagCompound> getEntitiesInternal() {
+        return entities;
+    }
+
     public List<TagCompound> getTiles() {
         return new ArrayList<>(tiles);
+    }
+
+    public List<TagCompound> getTilesInternal() {
+        return tiles;
+    }
+
+    public List<NextTickEntry> getNextTickEntries() {
+        return new ArrayList<>(nextTickEntries);
+    }
+
+    public List<NextTickEntry> getNextTickEntriesInternal() {
+        return nextTickEntries;
     }
 
     public short getSectionBitMask() {
@@ -131,8 +155,33 @@ public class CustomWorldChunkSnap implements GravSerializable {
         int version = serializer.readInt();
         this.heightMap = serializer.readObject();
         this.biomes = serializer.readObject();
-        this.tiles = serializer.readObject();
-        this.entities = serializer.readObject();
+
+        if (version < 2) {
+            this.tiles = serializer.readObject();
+            this.entities = serializer.readObject();
+            this.nextTickEntries = new ArrayList<>();
+        } else {
+            this.tiles = new ArrayList<>();
+            this.entities = new ArrayList<>();
+            this.nextTickEntries = new ArrayList<>();
+
+            int tileCount = serializer.readInt();
+            for (int i = 0; i < tileCount; i++) {
+                this.tiles.add(TagCompound.deserialize(serializer));
+            }
+
+            int entityCount = serializer.readInt();
+            for (int i = 0; i < entityCount; i++) {
+                this.entities.add(TagCompound.deserialize(serializer));
+            }
+
+            int nextTickCount = serializer.readInt();
+            for (int i = 0; i < nextTickCount; i++) {
+                this.nextTickEntries.add(NextTickEntry.deserialize(serializer));
+            }
+
+        }
+
         this.sectionBitMask = serializer.readShort();
 
         this.blocks = new byte[16][];
@@ -160,8 +209,22 @@ public class CustomWorldChunkSnap implements GravSerializable {
         serializer.writeInt(VERSION);
         serializer.writeObject(this.heightMap);
         serializer.writeObject(this.biomes);
-        serializer.writeObject(this.tiles);
-        serializer.writeObject(this.entities);
+
+        serializer.writeInt(this.tiles.size());
+        for (TagCompound tile : this.tiles) {
+            tile.serialize(serializer);
+        }
+
+        serializer.writeInt(this.entities.size());
+        for (TagCompound entity : this.entities) {
+            entity.serialize(serializer);
+        }
+
+        serializer.writeInt(this.nextTickEntries.size());
+        for (NextTickEntry entry : this.nextTickEntries) {
+            entry.serialize(serializer);
+        }
+
         serializer.writeShort(this.sectionBitMask);
         for (int i = 0; i < 16; i++) {
             if (((this.sectionBitMask >>> i) & 1) == 0)
@@ -188,6 +251,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
             //Sync
             AtomicReference<List<TagCompound>> tiles = new AtomicReference<>();
             AtomicReference<List<TagCompound>> entities = new AtomicReference<>();
+            AtomicReference<List<NextTickEntry>> nextTickEntries = new AtomicReference<>();
 
             byte[][] blocks = new byte[16][], blockData = new byte[16][];
             short sectionBitMask = chunk.getSectionBitMask();
@@ -195,6 +259,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
             Runnable runnable = () -> {
                 tiles.set(new ArrayList<>(chunk.syncGetTiles().values()));
                 entities.set(chunk.syncGetEntities());
+                nextTickEntries.set(Arrays.asList(chunk.syncGetNextTickEntries()));
 
                 for (int i = 0; i < 16; i++) {
                     if (((sectionBitMask >>> i) & 1) == 0)
@@ -226,7 +291,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
             }
 
             syncFuture.join();
-            CustomWorldChunkSnap snap = new CustomWorldChunkSnap(heightMap, emittedLight, skyLight, blocks, blockData, biomes, entities.get(), tiles.get(), sectionBitMask);
+            CustomWorldChunkSnap snap = new CustomWorldChunkSnap(heightMap, emittedLight, skyLight, blocks, blockData, biomes, entities.get(), tiles.get(), nextTickEntries.get(), sectionBitMask);
             snap.setX(chunk.getLoc().getX());
             snap.setZ(chunk.getLoc().getZ());
             return snap;

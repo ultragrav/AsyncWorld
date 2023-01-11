@@ -3,6 +3,7 @@ package net.ultragrav.asyncworld;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import net.ultragrav.asyncworld.chunk.NextTickEntry;
 import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.utils.CuboidRegion;
 import net.ultragrav.utils.IntVector3D;
@@ -319,6 +320,7 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     public abstract byte[] syncGetEmittedLight(int section);
 
     public abstract byte[] syncGetSkyLight(int section);
+    public abstract NextTickEntry[] syncGetNextTickEntries();
 
     public abstract short getSectionBitMask();
 

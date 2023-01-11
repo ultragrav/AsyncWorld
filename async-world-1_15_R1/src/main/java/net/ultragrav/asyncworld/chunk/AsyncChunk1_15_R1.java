@@ -308,6 +308,29 @@ public class AsyncChunk1_15_R1 extends AsyncChunk {
     }
 
     @Override
+    public NextTickEntry[] syncGetNextTickEntries() {
+//        Chunk chunk = getNmsChunk();
+//
+//        TickList<Block> list = chunk.world.getBlockTickList();
+//
+//        NextTickEntry[] entries = new NextTickEntry[list.()];
+//        for (int i = 0; i < list.size(); i++) {
+//            NextTickListEntry entry = list.get(i);
+//            entries[i] = new NextTickEntry(
+//                    Block.REGISTRY.c(entry.a()).toString(),
+//                    entry.a.getX(),
+//                    entry.a.getY(),
+//                    entry.a.getZ(),
+//                    entry.b,
+//                    entry.c
+//            );
+//        }
+//
+//        return entries;
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
     public short getSectionBitMask() {
         ChunkSection[] sections = getNmsChunk().getSections();
         short mask = 0;

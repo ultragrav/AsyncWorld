@@ -4,6 +4,7 @@ import net.minecraft.server.v1_12_R1.*;
 import net.ultragrav.asyncworld.AsyncWorld;
 import net.ultragrav.asyncworld.ChunkLocation;
 import net.ultragrav.asyncworld.chunk.AsyncChunk1_12_R1;
+import net.ultragrav.asyncworld.chunk.NextTickEntry;
 import net.ultragrav.nbt.wrapper.*;
 import net.ultragrav.utils.IntVector3D;
 import org.bukkit.craftbukkit.v1_12_R1.CraftChunk;
@@ -154,6 +155,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
         //Entities
         snap.getEntities().forEach(e -> loadEntity(e, chunk.getWorld(), chunk));
+
+        snap.getNextTickEntries().forEach(t -> chunk.getWorld().b(new BlockPosition(t.getX(), t.getY(), t.getZ()), Block.getByName(t.getBlockId()), (int) t.getDelay(), t.getPriority()));
     }
 
     private Entity loadEntity(TagCompound tag, World world, Chunk chunk) {
@@ -432,6 +435,30 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
         return arr;
+    }
+
+    @Override
+    public NextTickEntry[] syncGetNextTickEntries() {
+        Chunk chunk = getNmsChunk();
+
+        List<NextTickListEntry> list = chunk.world.a(chunk, false);
+
+        if (list == null) return new NextTickEntry[0];
+
+        NextTickEntry[] entries = new NextTickEntry[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            NextTickListEntry entry = list.get(i);
+            entries[i] = new NextTickEntry(
+                    Block.REGISTRY.b(entry.a()).toString(),
+                    entry.a.getX(),
+                    entry.a.getY(),
+                    entry.a.getZ(),
+                    entry.b - chunk.world.getTime(),
+                    entry.c
+            );
+        }
+
+        return entries;
     }
 
     @Override

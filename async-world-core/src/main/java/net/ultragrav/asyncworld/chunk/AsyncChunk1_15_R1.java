@@ -1,4 +1,4 @@
-package main.java.net.ultragrav.asyncworld.chunk;//package com.soraxus.prisons.util.world.chunk;
+//package main.java.net.ultragrav.asyncworld.chunk;//package com.soraxus.prisons.util.world.chunk;
 //
 //import com.soraxus.prisons.util.world.AsyncChunk;
 //import com.soraxus.prisons.util.world.AsyncWorld;

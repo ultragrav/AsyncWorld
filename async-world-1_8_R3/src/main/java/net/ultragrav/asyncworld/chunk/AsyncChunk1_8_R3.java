@@ -298,6 +298,32 @@ public class AsyncChunk1_8_R3 extends AsyncChunk {
     }
 
     @Override
+    public NextTickEntry[] syncGetNextTickEntries() {
+        Chunk chunk = getNmsChunk();
+
+        List<NextTickListEntry> list = chunk.world.a(chunk, false);
+
+        if (list == null) {
+            return new NextTickEntry[0];
+        }
+
+        NextTickEntry[] entries = new NextTickEntry[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            NextTickListEntry entry = list.get(i);
+            entries[i] = new NextTickEntry(
+                    Block.REGISTRY.c(entry.a()).toString(),
+                    entry.a.getX(),
+                    entry.a.getY(),
+                    entry.a.getZ(),
+                    entry.b - chunk.world.getTime(),
+                    entry.c
+            );
+        }
+
+        return entries;
+    }
+
+    @Override
     public short getSectionBitMask() {
         ChunkSection[] sections = getNmsChunk().getSections();
         short mask = 0;
