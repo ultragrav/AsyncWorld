@@ -4,10 +4,12 @@ import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.chunk.NextTickEntry;
+import net.ultragrav.asyncworld.schematics.Schematic;
 import net.ultragrav.nbt.wrapper.Tag;
 import net.ultragrav.nbt.wrapper.TagCompound;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
+import net.ultragrav.utils.IntVector3D;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
@@ -236,6 +238,29 @@ public class CustomWorldChunkSnap implements GravSerializable {
             serializer.writeObject(this.emittedLight[i]); //Emitted light
             serializer.writeObject(this.skyLight[i]); //Sky light
         }
+    }
+
+    public Schematic toSchematic() {
+        Schematic schematic = new Schematic(new IntVector3D(0, 0, 0), new IntVector3D(16, 256, 16));
+        for (int i = 0; i < blockData.length; i++) {
+            if (blockData[i] == null) {
+                continue;
+            }
+            for (int j = 0; j < blockData[i].length; j++) {
+                int x = j & 0xF;
+                int y = (j >> 8) + (i << 4);
+                int z = (j >> 4) & 0xF;
+                int block = blocks[i][j] & 0xFF;
+                int data = blockData[i][j] >> ((j & 1) << 2) & 0xF;
+                int combined = (block << 4) | data;
+                combined &= 0xFFF;
+                schematic.setBlockAt(x, y, z, combined);
+
+                int emitted = emittedLight[i][j] >> ((j & 1) << 2);
+                schematic.setEmittedLightAt(x, y, z, (byte) (emitted & 0xF));
+            }
+        }
+        return schematic;
     }
 
     private static String getMask(short s) {

@@ -210,6 +210,10 @@ public class Schematic implements GravSerializable {
         this.blocks[y][x][z] = newValue;
     }
 
+    public void setEmittedLightAt(int x, int y, int z, byte newValue) {
+        this.emittedLight[y][x][z] = newValue;
+    }
+
     public int getEmittedLight(int x, int y, int z) {
         return emittedLight[y][x][z] & 0xF;
     }

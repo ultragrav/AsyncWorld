@@ -406,8 +406,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
     @Override
     public void syncGetBlocksAndData(byte[] blocks, byte[] data, int section) {
-        if (data.length < 2048 || blocks.length < 4096)
-            return;
+        if (data.length < 2048 || blocks.length < 4096) return;
+
         ChunkSection sect = getNmsChunk().getSections()[section];
         if (sect == null)
             return;
