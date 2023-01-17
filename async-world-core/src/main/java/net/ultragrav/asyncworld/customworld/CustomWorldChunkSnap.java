@@ -1,5 +1,6 @@
 package net.ultragrav.asyncworld.customworld;
 
+import com.google.common.escape.Escaper;
 import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncChunk;
@@ -260,6 +261,12 @@ public class CustomWorldChunkSnap implements GravSerializable {
                 schematic.setEmittedLightAt(x, y, z, (byte) (emitted & 0xF));
             }
         }
+        tiles.forEach(value -> {
+            int x = (int) value.getData().get("x").getData();
+            int y = (int) value.getData().get("y").getData();
+            int z = (int) value.getData().get("z").getData();
+            schematic.getTiles().put(new IntVector3D(x, y, z), value);
+        });
         return schematic;
     }
 
