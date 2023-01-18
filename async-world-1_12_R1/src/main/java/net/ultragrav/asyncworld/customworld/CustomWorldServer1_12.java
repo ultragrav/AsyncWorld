@@ -2,6 +2,10 @@ package net.ultragrav.asyncworld.customworld;
 
 import net.minecraft.server.v1_12_R1.*;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_12_R1.generator.CustomChunkGenerator;
+import org.bukkit.craftbukkit.v1_12_R1.generator.NetherChunkGenerator;
+import org.bukkit.craftbukkit.v1_12_R1.generator.NormalChunkGenerator;
+import org.bukkit.craftbukkit.v1_12_R1.generator.SkyLandsChunkGenerator;
 
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -35,5 +39,20 @@ public class CustomWorldServer1_12 extends WorldServer {
     }
 
     @Override
-    public void save(boolean forceSave, IProgressUpdate progressUpdate) throws ExceptionWorldConflict {}
+    protected IChunkProvider n() {
+        IChunkLoader ichunkloader = this.dataManager.createChunkLoader(this.worldProvider);
+        return new ChunkProviderServer(
+                this,
+                ichunkloader,
+                new CustomChunkGenerator(this, this.getSeed(), this.generator) {
+                    @Override
+                    public void recreateStructures(Chunk chunk, int i, int j) {
+                    }
+                }
+        );
+    }
+
+    @Override
+    public void save(boolean forceSave, IProgressUpdate progressUpdate) throws ExceptionWorldConflict {
+    }
 }

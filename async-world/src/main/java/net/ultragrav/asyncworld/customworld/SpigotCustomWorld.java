@@ -367,6 +367,7 @@ public class SpigotCustomWorld extends CustomWorld {
         if (asyncWorld.getChunkMap().get(cx, cz) == null) {
             if (preloaded.get()) return null;
 
+
             // Load it
             CustomWorldChunkSnap snap = chunkSnapCache.get(cx, cz);
 
@@ -381,8 +382,10 @@ public class SpigotCustomWorld extends CustomWorld {
 
             return chunk;
         }
+
         CustomWorldAsyncChunk<?> asyncChunk = asyncWorld.getChunk(cx, cz);
         asyncChunk.awaitFinish();
+
         return asyncChunk;
     }
 
