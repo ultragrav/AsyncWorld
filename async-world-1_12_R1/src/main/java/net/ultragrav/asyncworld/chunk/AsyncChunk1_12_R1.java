@@ -235,6 +235,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
             for (Entity entity : nmsCachedChunk.getEntitySlices()[i]) {
                 //All entities in the i-th section
                 NBTTagCompound nmsCompound = new NBTTagCompound();
+                if (entity.dead) continue;
                 if (entity.d(nmsCompound)) {
                     TagCompound compound = fromNMSCompound(nmsCompound);
                     out.add(compound);

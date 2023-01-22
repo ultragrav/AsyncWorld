@@ -385,6 +385,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
                 continue;
             for (Entity entity : getNmsChunk().getEntitySlices()[i]) {
                 //All entities in the i-th section
+                if (entity.dead) continue;
                 NBTTagCompound nmsCompound = new NBTTagCompound();
                 if (entity.d(nmsCompound)) {
                     TagCompound compound = AsyncChunk1_12_R1.fromNMSCompound(nmsCompound);
