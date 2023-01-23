@@ -1,13 +1,12 @@
 package net.ultragrav.asyncworld.customworld;
 
-import com.google.common.escape.Escaper;
 import lombok.Getter;
 import lombok.Setter;
 import net.ultragrav.asyncworld.AsyncChunk;
 import net.ultragrav.asyncworld.chunk.NextTickEntry;
 import net.ultragrav.asyncworld.schematics.Schematic;
-import net.ultragrav.nbt.wrapper.Tag;
 import net.ultragrav.nbt.wrapper.TagCompound;
+import net.ultragrav.nbt.wrapper.TagInt;
 import net.ultragrav.serializer.GravSerializable;
 import net.ultragrav.serializer.GravSerializer;
 import net.ultragrav.utils.IntVector3D;
@@ -262,9 +261,9 @@ public class CustomWorldChunkSnap implements GravSerializable {
             }
         }
         tiles.forEach(value -> {
-            int x = (int) value.getData().get("x").getData();
-            int y = (int) value.getData().get("y").getData();
-            int z = (int) value.getData().get("z").getData();
+            int x = ((TagInt) value.getData().get("x")).getData();
+            int y = ((TagInt) value.getData().get("y")).getData();
+            int z = ((TagInt) value.getData().get("z")).getData();
             schematic.getTiles().put(new IntVector3D(x, y, z), value);
         });
         return schematic;
