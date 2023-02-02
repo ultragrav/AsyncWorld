@@ -58,16 +58,16 @@
         <module>async-world-test</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>ultragrav-repo</id>
-            <url>https://mvn.ultragrav.net/</url>
-        </repository>
-        <repository>
-            <id>ultragrav-spigot</id>
-            <url>https://smvn.ultragrav.net/</url>
-        </repository>
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>ultragrav-repo</id>-->
+<!--            <url>https://mvn.ultragrav.net/</url>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>ultragrav-spigot</id>-->
+<!--            <url>https://smvn.ultragrav.net/</url>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
     <dependencies>
         <dependency>
