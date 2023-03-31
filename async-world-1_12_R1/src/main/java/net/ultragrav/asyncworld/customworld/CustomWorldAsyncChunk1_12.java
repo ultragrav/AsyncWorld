@@ -219,7 +219,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
 
             ChunkSection section = sects[i] = new ChunkSection(i << 4, isNormalWorld());
 
-            section.b(new NibbleArray(skyLight[i])); //Sky light
+            if (skyLight[i] != null) {
+                section.b(new NibbleArray(skyLight[i])); //Sky light
+            }
             section.a(new NibbleArray(emittedLight[i])); //Emitted light
 
             section.getBlocks().a(blocks[i], new NibbleArray(blockData[i]), null); //Blocks
