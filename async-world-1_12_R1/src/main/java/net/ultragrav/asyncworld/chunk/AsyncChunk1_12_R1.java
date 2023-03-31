@@ -210,7 +210,10 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             nmsCachedChunk.getSections()[sectionIndex] = new ChunkSection(sectionIndex << 4, nmsCachedChunk.getWorld().getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL);
         }
-        nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z, value);
+        ChunkSection section = nmsCachedChunk.getSections()[sectionIndex];
+        if (section.getSkyLightArray() != null) {
+            section.getSkyLightArray().a(x, y & 15, z, value);
+        }
     }
 
     @Override
@@ -282,6 +285,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         ChunkSection sect = chunk.getSections()[section];
         if (sect == null)
             return null;
+
+        NibbleArray nibble = sect.getSkyLightArray();
+        if (nibble == null)
+            return null;
+
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
         return arr;

@@ -19,8 +19,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         Arrays.fill(maxFilledSkyLight, (byte) 0xFF);
     }
 
-    public CustomWorldAsyncChunk1_12(AsyncWorld parent, ChunkLocation loc) {
+    private CustomWorldAsyncWorld parent;
+
+    public CustomWorldAsyncChunk1_12(CustomWorldAsyncWorld parent, ChunkLocation loc) {
         super(parent, loc);
+        this.parent = parent;
         Arrays.fill(biomes, (byte) 1);
     }
 
@@ -31,12 +34,16 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     private final int[] heightMap = new int[256];
     private boolean dirtyHeightMap = false;
 
+    private boolean isNormalWorld() {
+        return parent.getCustomWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL;
+    }
+
     @Override
     public synchronized void setEmittedLight(int x, int y, int z, int value) {
         int sectionIndex = y >> 4;
         ChunkSection section = sections[sectionIndex];
         if (section == null) {
-            section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+            section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, isNormalWorld());
         }
         section.getEmittedLightArray().a(x, y & 0xF, z, value & 0xF);
     }
@@ -82,7 +89,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         if (section == null) {
             if (block == 0)
                 return;
-            section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, true);
+            section = sections[sectionIndex] = new ChunkSection(sectionIndex << 4, isNormalWorld());
         }
 
         IBlockData blockData = Block.getByCombinedId(block);
@@ -210,7 +217,7 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             if (((mask >>> i) & 1) == 0)
                 continue;
 
-            ChunkSection section = sects[i] = new ChunkSection(i << 4, true);
+            ChunkSection section = sects[i] = new ChunkSection(i << 4, isNormalWorld());
 
             section.b(new NibbleArray(skyLight[i])); //Sky light
             section.a(new NibbleArray(emittedLight[i])); //Emitted light
@@ -433,6 +440,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
         ChunkSection sect = chunk.getSections()[section];
         if (sect == null)
             return null;
+
+        NibbleArray nibble = sect.getSkyLightArray();
+        if (nibble == null)
+            return null;
+
         byte[] arr = new byte[2048];
         System.arraycopy(chunk.getSections()[section].getSkyLightArray().asBytes(), 0, arr, 0, arr.length);
         return arr;

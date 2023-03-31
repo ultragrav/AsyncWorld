@@ -11,6 +11,7 @@ public abstract class CustomWorld {
     public abstract String getName();
     public abstract World getBukkitWorld();
     public abstract boolean isWorldCreated();
+    public abstract World.Environment getEnvironment();
     public abstract void create(Consumer<CustomWorldAsyncWorld> generator);
 
     public void create(SavedCustomWorld world) { this.create(world, true); }

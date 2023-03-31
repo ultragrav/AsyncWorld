@@ -41,6 +41,11 @@ public class SpigotCustomWorldAsyncWorld extends CustomWorldAsyncWorld {
     }
 
     @Override
+    public CustomWorld getCustomWorld() {
+        return world;
+    }
+
+    @Override
     public World getBukkitWorld() {
         return world.getBukkitWorld();
     }
