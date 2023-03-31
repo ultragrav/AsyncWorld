@@ -94,7 +94,7 @@ public class CustomWorldChunkSnap implements GravSerializable {
     public byte[][] getSkyLight() {
         byte[][] sky = new byte[skyLight.length][];
         for (int i = 0; i < sky.length; i++) {
-            if (emittedLight[i] != null) {
+            if (skyLight[i] != null) {
                 sky[i] = Arrays.copyOf(skyLight[i], skyLight[i].length);
             }
         }
