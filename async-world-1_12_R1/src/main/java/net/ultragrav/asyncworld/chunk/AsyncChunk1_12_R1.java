@@ -173,7 +173,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
         if (nmsCachedChunk.getSections()[sectionIndex] == null) {
             return 0;
         }
-        return nmsCachedChunk.getSections()[sectionIndex].getSkyLightArray().a(x, y & 15, z);
+
+        ChunkSection section = nmsCachedChunk.getSections()[sectionIndex];
+        if (section.getSkyLightArray() == null) return 0;
+
+        return section.getSkyLightArray().a(x, y & 15, z);
     }
 
     @Override
@@ -454,8 +458,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                 System.arraycopy(guChunkSection.emittedLight, 0,
                         section.getEmittedLightArray().asBytes(), 0, guChunkSection.emittedLight.length);
 
-                if (this.isFullSkyLight())
+                if (this.isFullSkyLight() && section.getSkyLightArray() != null) {
                     Arrays.fill(section.getSkyLightArray().asBytes(), (byte) 0xFF);
+                }
 
                 if (optimizedSections[sectionIndex] != null) {
                     try {
@@ -498,8 +503,9 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
                     int emittedLight = (guChunkSection.emittedLight[index] >>> (part << 2) & 0xF);
                     section.getEmittedLightArray().a(lx, ly, lz, emittedLight);
 
-                    if (this.fullSkyLight)
+                    if (this.fullSkyLight && section.getSkyLightArray() != null) {
                         section.getSkyLightArray().a(lx, ly, lz, 0xF);
+                    }
                 }
 
                 //Remove tile entity

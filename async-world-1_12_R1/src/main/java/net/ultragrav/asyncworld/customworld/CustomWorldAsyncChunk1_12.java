@@ -257,7 +257,9 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
                         continue;
 
                     //Default skylighting
-                    System.arraycopy(maxFilledSkyLight, 0, section.getSkyLightArray().asBytes(), 0, 2048);
+                    if (section.getSkyLightArray() != null) {
+                        System.arraycopy(maxFilledSkyLight, 0, section.getSkyLightArray().asBytes(), 0, 2048);
+                    }
 
                     try {
                         AsyncChunk1_12_R1.setCount(0, nonAirCounts[i], section);
