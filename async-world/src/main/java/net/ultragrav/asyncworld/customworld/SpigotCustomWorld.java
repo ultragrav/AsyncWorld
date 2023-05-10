@@ -450,6 +450,7 @@ public class SpigotCustomWorld extends CustomWorld {
             }
             this.worldHandler.invalidateWorld(); //Remove world from reference
         }
+        startedCreation.set(false);
     }
 
     @Override
