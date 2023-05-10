@@ -272,6 +272,15 @@ public class SpigotCustomWorld extends CustomWorld {
 
         }
 
+        // Make sure that all chunks in the world size are either preloaded, cached or at least exist
+        for (int x = 0; x < sizeChunksX; x++) {
+            for (int z = 0; z < sizeChunksZ; z++) {
+                if (chunkSnapExists(x, z)) continue;
+                if (asyncWorld.getChunkMap().contains(x, z)) continue;
+                this.worldHandler.finishChunk(asyncWorld.getChunk(x, z));
+            }
+        }
+
         finishedGeneration.set(true);
 
         ms = System.currentTimeMillis();
