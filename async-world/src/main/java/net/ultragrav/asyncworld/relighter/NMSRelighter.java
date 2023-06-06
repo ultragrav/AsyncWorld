@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NMSRelighter implements Relighter {
@@ -51,14 +52,13 @@ public class NMSRelighter implements Relighter {
     private final List<QueuedRelight> queuedRelights = new ArrayList<>();
     private volatile boolean scheduled = false;
     private final ReentrantLock lock = new ReentrantLock(true);
-    private final ExecutorService service = Executors.newSingleThreadExecutor();
 
     private void schedule() {
         lock.lock();
         try {
             if (scheduled)
                 return;
-            service.submit(() -> {
+            ForkJoinPool.commonPool().submit(() -> {
                 try {
                     try {
                         Thread.sleep(10);
@@ -110,9 +110,18 @@ public class NMSRelighter implements Relighter {
     //Credit to boydti (FastAsyncWorldEdit) for much of the below
 
     private void skyRelight(List<QueuedRelight> chunks) {
-        if (chunks.size() != 0) {
-            chunks.get(0).chunk.getParent().ensureChunkLoaded(chunks.stream().map(c -> c.chunk).toArray(AsyncChunk[]::new));
-        }
+        if (chunks.size() == 0)
+            return;
+
+        if (chunks.get(0).chunk.getParent().getBukkitWorld() == null)
+            return;
+
+        chunks.get(0).chunk.getParent().ensureChunkLoaded(chunks.stream().map(c -> c.chunk).toArray(AsyncChunk[]::new));
+
+        // Do again
+        if (chunks.get(0).chunk.getParent().getBukkitWorld() == null)
+            return;
+
         for (int y = 255; y >= 0; y--) {
             for (QueuedRelight queuedChunk : chunks) {
                 int[] current = queuedChunk.current;

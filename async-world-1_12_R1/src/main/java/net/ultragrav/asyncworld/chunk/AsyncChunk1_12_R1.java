@@ -47,6 +47,7 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
 
     private void validateCachedChunk() {
         if (nmsCachedChunk == null) {
+            if (getParent().getBukkitWorld() == null) return;
             if (!getParent().getBukkitWorld().isChunkLoaded(this.getLoc().getX(), this.getLoc().getZ())) {
                 return;
             }

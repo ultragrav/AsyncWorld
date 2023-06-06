@@ -428,6 +428,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
 
     @Override
     public void ensureChunkLoaded(AsyncChunk... chunks) {
+        if (getBukkitWorld() == null) return;
         boolean sync = Bukkit.isPrimaryThread();
         List<AsyncChunk> syncLoad = new ArrayList<>();
         for (AsyncChunk chunk : chunks) {
@@ -442,6 +443,10 @@ public class SpigotAsyncWorld extends AsyncWorld {
         if (!syncLoad.isEmpty()) {
             CompletableFuture<Void> future = new CompletableFuture<>();
             SyncScheduler.sync(() -> {
+                if (getBukkitWorld() == null) {
+                    future.complete(null);
+                    return;
+                }
                 syncLoad.forEach(c -> getBukkitWorld().loadChunk(c.getLoc().getX(), c.getLoc().getZ(), true));
                 future.complete(null);
             }, chunkQueue.getPlugin());

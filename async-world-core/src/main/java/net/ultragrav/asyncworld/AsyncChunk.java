@@ -292,10 +292,14 @@ public abstract class AsyncChunk implements Callable<AsyncChunk> {
     }
 
     public Chunk getBukkitChunk() {
+        if (loc.getWorld().getBukkitWorld() == null)
+            return null;
         return loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ());
     }
 
     public boolean isChunkLoaded() {
+        if (loc.getWorld().getBukkitWorld() == null)
+            return false;
         return loc.getWorld().getBukkitWorld().isChunkLoaded(loc.getX(), loc.getZ());
     }
 

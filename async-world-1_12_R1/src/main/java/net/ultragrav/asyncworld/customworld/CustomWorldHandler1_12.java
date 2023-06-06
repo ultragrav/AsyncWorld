@@ -86,13 +86,8 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             //Get dimension number.
             dimension = getDimension();
 
-//            safetyLock.unlock();
-            long ms = System.currentTimeMillis();
             world = new CustomWorldServer1_12(dataManager, dimension, environment); //Instantiating world calls bukkitServer.addWorld(this)
-            ms = System.currentTimeMillis() - ms;
-//            safetyLock.lock();
             world.b();
-            ms = System.currentTimeMillis() - ms;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -154,7 +149,7 @@ public class CustomWorldHandler1_12 implements CustomWorldHandler {
             addLock.unlock();
         }
 
-        //NOTE: It would seem calling these is necessary for certain spigot functions to work in this world
+        //NOTE: It would seem calling these events is necessary for certain spigot functions to work in this world
         //The one I encountered was falling blocks not caring for setDropItem(false)
         Bukkit.getPluginManager().callEvent(new WorldInitEvent(world.getWorld()));
         Bukkit.getPluginManager().callEvent(new WorldLoadEvent(world.getWorld()));
