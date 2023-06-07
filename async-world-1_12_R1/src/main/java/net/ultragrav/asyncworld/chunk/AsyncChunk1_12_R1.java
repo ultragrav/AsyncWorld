@@ -375,8 +375,11 @@ public class AsyncChunk1_12_R1 extends AsyncChunk {
     @Override
     public void sendPackets(int mask) {
 
+
         ChunkLocation loc = this.getLoc();
-        Chunk nmsChunk = ((CraftChunk) loc.getWorld().getBukkitWorld().getChunkAt(loc.getX(), loc.getZ())).getHandle();
+        org.bukkit.World world = loc.getWorld().getBukkitWorld();
+        if (world == null) return;
+        Chunk nmsChunk = ((CraftChunk) world.getChunkAt(loc.getX(), loc.getZ())).getHandle();
         PacketPlayOutMapChunk packet;
         PacketPlayOutMapChunk secondMapPacket;
 
