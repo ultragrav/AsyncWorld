@@ -44,7 +44,7 @@ public class SpigotAsyncWorld extends AsyncWorld {
     public SpigotAsyncWorld(World world, ChunkQueue chunkQueue) {
         this.world = world.getUID();
         this.chunkQueue = chunkQueue;
-        this.relighter = chunkQueue.getRelighter();
+        this.relighter = new NMSRelighter(chunkQueue.getPlugin());
 
         String name = Bukkit.getServer().getClass().getName();
         String[] parts = name.split("\\.");
