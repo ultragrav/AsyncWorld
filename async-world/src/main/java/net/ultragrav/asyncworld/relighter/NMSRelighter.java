@@ -75,10 +75,7 @@ public class NMSRelighter implements Relighter {
                         lock.unlock();
                     }
                     Collections.sort(relights);
-                    long ms = System.currentTimeMillis();
                     skyRelight(relights);
-                    ms = System.currentTimeMillis() - ms;
-                    //System.out.println("Relighted in " + ms + "ms");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

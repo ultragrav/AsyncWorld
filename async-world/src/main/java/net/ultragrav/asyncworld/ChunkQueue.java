@@ -1,6 +1,7 @@
 package net.ultragrav.asyncworld;
 
 import lombok.Getter;
+import net.ultragrav.asyncworld.relighter.NMSRelighter;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,6 +24,8 @@ public class ChunkQueue implements Listener {
     boolean useGC = false;
     @Getter
     private final Plugin plugin;
+
+    private final NMSRelighter relighter;
     private final List<QueuedChunk> queue = new ArrayList<>();
     private int taskId = -1;
     private long lastGC = System.currentTimeMillis();
@@ -33,6 +36,7 @@ public class ChunkQueue implements Listener {
 
     public ChunkQueue(Plugin plugin) {
         this.plugin = plugin;
+        this.relighter = new NMSRelighter(plugin);
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
@@ -208,6 +212,10 @@ public class ChunkQueue implements Listener {
         } finally {
             this.listLock.lock();
         }
+    }
+
+    public NMSRelighter getRelighter() {
+        return relighter;
     }
 
     public boolean queueChunk(AsyncChunk chunk) {
