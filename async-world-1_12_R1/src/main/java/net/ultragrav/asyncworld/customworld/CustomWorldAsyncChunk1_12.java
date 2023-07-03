@@ -33,6 +33,8 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
     private final int[] nonAirCounts = new int[16];
     private final int[] heightMap = new int[256];
     private boolean dirtyHeightMap = false;
+    private CustomWorldChunkSnap cachedSnap = null;
+
 
     private boolean isNormalWorld() {
         return parent.getCustomWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL;
@@ -145,8 +147,6 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             }
         }
     }
-
-    private CustomWorldChunkSnap cachedSnap = null;
 
     private synchronized void fromSnap2(Chunk chunk, CustomWorldChunkSnap snap) {
 
@@ -307,10 +307,11 @@ public class CustomWorldAsyncChunk1_12 extends CustomWorldAsyncChunk<WorldServer
             });
 
             this.flushBiomes();
-            if (getEditedSections() != 0) //No blocks edited, or loaded from chunk snap -> which contains lighting already
-                // nmsChunk.initLighting();
 
-                this.cachedSnap = null;
+            if (getEditedSections() != 0) //No blocks edited, or loaded from chunk snap -> which contains lighting already
+                nmsChunk.initLighting();
+
+            this.cachedSnap = null;
         } catch (Throwable e) {
             e.printStackTrace();
             throw e;
